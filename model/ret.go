@@ -11,6 +11,6 @@ type TiebaUser struct {
 }
 
 type UserAvatar struct {
-	Avatar   string
-	Nickname string
+	Avatar   string `json:"avatar"`
+	Nickname string `json:"nickname"`
 }

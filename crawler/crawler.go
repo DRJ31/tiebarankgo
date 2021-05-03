@@ -141,7 +141,7 @@ func GetUser(url string) (*model.UserAvatar, error) {
 	}
 
 	// Ensure correct display of Chinese
-	utf8Reader := transform.NewReader(res.Body, simplifiedchinese.GBK.NewDecoder())
+	//utf8Reader := transform.NewReader(res.Body, simplifiedchinese.GBK.NewDecoder())
 	defer res.Body.Close()
 	if res.StatusCode != 200 {
 		log.Printf("Status code err: %d %s", res.StatusCode, res.Status)
@@ -151,7 +151,7 @@ func GetUser(url string) (*model.UserAvatar, error) {
 	}
 
 	// Create document from webpage
-	doc, err := goquery.NewDocumentFromReader(utf8Reader)
+	doc, err := goquery.NewDocumentFromReader(res.Body)
 	if err != nil {
 		log.Printf("New document err: %v", err)
 		return nil, err

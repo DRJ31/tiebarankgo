@@ -132,3 +132,39 @@ func GetUsers(c *fiber.Ctx) error {
 		"total": totalMember,
 	})
 }
+
+func GetUser(c *fiber.Ctx) error {
+	var ul model.UserLink
+
+	if err := c.BodyParser(&ul); err != nil {
+		return err
+	}
+
+	if !secrets.TokenCheck(C.SALT, ul.Link, ul.Token) {
+		c.Status(400)
+		return c.JSON(fiber.Map{"message": "Invalid request"})
+	}
+
+	// Get user information
+	result, err := crawler.GetUser(ul.Link)
+	if err != nil {
+		return err
+	}
+
+	// Initialize database
+	db, err := model.Init()
+	if err != nil {
+		return err
+	}
+	defer model.Close(db)
+
+	var user model.User
+	db.First(&user, "link = ?", ul.Link)
+	if result.Nickname != user.Nickname {
+		db.Model(&user).Updates(model.User{Nickname: result.Nickname})
+	}
+
+	return c.JSON(fiber.Map{
+		"user": result,
+	})
+}

@@ -10,6 +10,7 @@ import (
 
 func InitRouter(app *fiber.App) {
 	app.Get("/api/v2/tieba/users", router.GetUsers)
+	app.Post("/api/v2/tieba/user", router.GetUser)
 }
 
 func main() {
