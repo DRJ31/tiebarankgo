@@ -1,6 +1,7 @@
 package crawler
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/DRJ31/tiebarankgo/model"
@@ -22,6 +23,8 @@ type MyError struct {
 func (e *MyError) Error() string {
 	return fmt.Sprintf("Error: %v", e.Message)
 }
+
+var ErrUserNotFound = errors.New("user not found")
 
 // Get multiple users in a page
 func GetUsers(tieba string, page uint) ([]model.TiebaUser, error) {
@@ -55,6 +58,16 @@ func GetUsers(tieba string, page uint) ([]model.TiebaUser, error) {
 
 	db, err := model.Init()
 	defer model.Close(db)
+
+	// Get total users
+	total, err := strconv.ParseUint(doc.Find(".drl_info_txt_gray").Text(), 10, 32)
+	if err != nil {
+		log.Printf("Total parse err: %v", err)
+	}
+	var ctx = context.Background()
+	rdb := model.InitRedis()
+	defer rdb.Close()
+	rdb.Set(ctx, "tieba_genshin_member_total", total, 0)
 
 	doc.Find(".drl_list_item").Each(func(i int, s *goquery.Selection) {
 		// Check if the user is VIP
@@ -106,8 +119,10 @@ func GetUsers(tieba string, page uint) ([]model.TiebaUser, error) {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			userAvatar, e := GetUser(link)
 			if e != nil {
-				err = e
-				return
+				if !errors.Is(e, ErrUserNotFound) {
+					err = e
+					return
+				}
 			}
 			nickname = userAvatar.Nickname
 		} else {
@@ -133,11 +148,11 @@ func GetUsers(tieba string, page uint) ([]model.TiebaUser, error) {
 }
 
 // Get single user information
-func GetUser(url string) (*model.UserAvatar, error) {
+func GetUser(url string) (model.UserAvatar, error) {
 	res, err := http.Get("http://tieba.baidu.com" + url)
 	if err != nil {
 		log.Printf("Crawl err: %v", err)
-		return nil, err
+		return model.UserAvatar{}, err
 	}
 
 	// Ensure correct display of Chinese
@@ -145,7 +160,7 @@ func GetUser(url string) (*model.UserAvatar, error) {
 	defer res.Body.Close()
 	if res.StatusCode != 200 {
 		log.Printf("Status code err: %d %s", res.StatusCode, res.Status)
-		return nil, &MyError{
+		return model.UserAvatar{}, &MyError{
 			fmt.Sprintf("%d %s", res.StatusCode, res.Status),
 		}
 	}
@@ -154,15 +169,15 @@ func GetUser(url string) (*model.UserAvatar, error) {
 	doc, err := goquery.NewDocumentFromReader(res.Body)
 	if err != nil {
 		log.Printf("New document err: %v", err)
-		return nil, err
+		return model.UserAvatar{}, err
 	}
 
 	avatar, ok := doc.Find(".userinfo_left_head").Find("img").Attr("src")
 	if !ok {
-		return nil, &MyError{"Could not find avatar path"}
+		return model.UserAvatar{}, ErrUserNotFound
 	}
 
 	nicknameArr := strings.Split(doc.Find("title").Text(), "的贴吧")
 
-	return &model.UserAvatar{Avatar: avatar, Nickname: nicknameArr[0]}, nil
+	return model.UserAvatar{Avatar: avatar, Nickname: nicknameArr[0]}, nil
 }

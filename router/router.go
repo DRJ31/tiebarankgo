@@ -66,6 +66,7 @@ func GetUsers(c *fiber.Ctx) error {
 	byteUsers, err := rdb.Get(ctx, "tieba_genshin_page_"+strconv.FormatUint(realPage, 10)).Bytes()
 	var users []model.TiebaUser
 	if err != nil {
+		log.Println(err)
 		users, err = crawler.GetUsers(C.TIEBA, uint(realPage))
 		if err != nil {
 			return err
@@ -92,11 +93,12 @@ func GetUsers(c *fiber.Ctx) error {
 	defer model.Close(db)
 
 	// Renew user information
+	uss := make([]model.User, 0, 20)
 	for _, user := range users {
 		var oldUser model.User
 		res := db.First(&oldUser, "name = ?", user.Name)
 		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-			db.Create(&model.User{
+			uss = append(uss, model.User{
 				Rank:     user.Rank,
 				Level:    user.Level,
 				Exp:      user.Exp,
@@ -114,6 +116,9 @@ func GetUsers(c *fiber.Ctx) error {
 				Nickname: user.Nickname,
 			})
 		}
+	}
+	if len(uss) > 0 {
+		db.Create(&uss)
 	}
 
 	var result []model.TiebaUser
