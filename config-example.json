@@ -5,5 +5,7 @@
   "username": "username",
   "password": "password",
   "db_host": "127.0.0.1",
-  "database": "tieba"
+  "database": "tieba",
+  "redis_host": "127.0.0.1",
+  "redis_port": "6379"
 }
