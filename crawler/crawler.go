@@ -7,6 +7,7 @@ import (
 	"github.com/DRJ31/tiebarankgo/model"
 	C "github.com/DRJ31/tiebarankgo/secrets/constants"
 	"github.com/PuerkitoBio/goquery"
+	"github.com/go-redis/redis/v8"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/transform"
 	"gorm.io/gorm"
@@ -14,6 +15,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type MyError struct {
@@ -60,7 +62,7 @@ func GetUsers(tieba string, page uint) ([]model.TiebaUser, error) {
 	defer model.Close(db)
 
 	// Get total users
-	total, err := strconv.ParseUint(doc.Find(".drl_info_txt_gray").Text(), 10, C.BITSIZE)
+	total, err := strconv.ParseUint(doc.Find(".drl_info_txt_gray").Text(), C.BASE, C.BITSIZE)
 	if err != nil {
 		log.Printf("Total parse err: %v", err)
 	}
@@ -74,7 +76,7 @@ func GetUsers(tieba string, page uint) ([]model.TiebaUser, error) {
 		vip := s.Find(".drl_item_card").HasClass("drl_item_vip")
 
 		// Get Rank of user
-		rank, e := strconv.ParseUint(s.Find(".drl_item_index").Text(), 10, C.BITSIZE)
+		rank, e := strconv.ParseUint(s.Find(".drl_item_index").Text(), C.BASE, C.BITSIZE)
 		if e != nil {
 			log.Printf("Rank parse err: %v", e)
 			err = e
@@ -82,7 +84,7 @@ func GetUsers(tieba string, page uint) ([]model.TiebaUser, error) {
 		}
 
 		// Get experience value of user
-		exp, e := strconv.ParseUint(s.Find(".drl_item_exp").Text(), 10, C.BITSIZE)
+		exp, e := strconv.ParseUint(s.Find(".drl_item_exp").Text(), C.BASE, C.BITSIZE)
 		if e != nil {
 			log.Printf("Exp parse err: %v", e)
 			err = e
@@ -105,7 +107,7 @@ func GetUsers(tieba string, page uint) ([]model.TiebaUser, error) {
 			return
 		}
 		level = strings.Split(level, "lv")[1]
-		lv, e := strconv.ParseUint(level, 10, C.BITSIZE)
+		lv, e := strconv.ParseUint(level, C.BASE, C.BITSIZE)
 		if e != nil {
 			log.Printf("Level parse err: %v", e)
 			err = e
@@ -180,4 +182,69 @@ func GetUser(url string) (model.UserAvatar, error) {
 	nicknameArr := strings.Split(doc.Find("title").Text(), "的贴吧")
 
 	return model.UserAvatar{Avatar: avatar, Nickname: nicknameArr[0]}, nil
+}
+
+// Get total number of posts and members
+func GetTotal() (uint, uint, error) {
+	rdb := model.InitRedis()
+	defer rdb.Close()
+	var ctx = context.Background()
+
+	members, err := rdb.Get(ctx, "tieba_genshin_total").Uint64()
+	if err != nil {
+		return getTotal(rdb, ctx)
+	}
+
+	posts, err := rdb.Get(ctx, "tieba_genshin_post_total").Uint64()
+	if err != nil {
+		return getTotal(rdb, ctx)
+	}
+
+	return uint(posts), uint(members), nil
+}
+
+func getTotal(rdb *redis.Client, ctx context.Context) (uint, uint, error) {
+	res, err := http.Get(fmt.Sprintf("http://tieba.baidu.com/f?ie=utf-8&kw=%s", C.TIEBA))
+	if err != nil {
+		log.Printf("Crawl err: %v", err)
+		return 0, 0, err
+	}
+
+	// Ensure correct display of Chinese
+	//utf8Reader := transform.NewReader(res.Body, simplifiedchinese.GBK.NewDecoder())
+	defer res.Body.Close()
+	if res.StatusCode != 200 {
+		log.Printf("Status code err: %d %s", res.StatusCode, res.Status)
+		return 0, 0, &MyError{
+			fmt.Sprintf("%d %s", res.StatusCode, res.Status),
+		}
+	}
+
+	// Create document from webpage
+	doc, err := goquery.NewDocumentFromReader(res.Body)
+	if err != nil {
+		log.Printf("New document err: %v", err)
+		return 0, 0, err
+	}
+
+	memberStr := doc.Find(".card_menNum").Text()
+	memberStr = strings.Join(strings.Split(memberStr, ","), "")
+	postStr := doc.Find(".card_infoNum").Text()
+	postStr = strings.Join(strings.Split(postStr, ","), "")
+
+	members, err := strconv.ParseUint(memberStr, C.BASE, C.BITSIZE)
+	if err != nil {
+		log.Println(err)
+		return 0, 0, err
+	}
+	posts, err := strconv.ParseUint(postStr, C.BASE, C.BITSIZE)
+	if err != nil {
+		log.Println(err)
+		return 0, 0, err
+	}
+
+	rdb.Set(ctx, "tieba_genshin_total", members, time.Minute)
+	rdb.Set(ctx, "tieba_genshin_post_total", posts, time.Minute)
+
+	return uint(posts), uint(members), nil
 }

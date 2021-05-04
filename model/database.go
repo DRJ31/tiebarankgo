@@ -33,6 +33,16 @@ type Event struct {
 	Event string    `json:"event"`
 }
 
+type Post struct {
+	Id        uint      `json:"id"`
+	Date      time.Time `json:"date"`
+	Total     uint      `json:"total"`
+	Followers uint      `json:"followers"`
+	Members   uint      `json:"members"`
+	Vip       uint      `json:"vip"`
+	Signin    uint      `json:"signin"`
+}
+
 func (User) TableName() string {
 	return "user"
 }
@@ -43,6 +53,10 @@ func (Anniversary) TableName() string {
 
 func (Event) TableName() string {
 	return "event"
+}
+
+func (Post) TableName() string {
+	return "post"
 }
 
 func Init() (*gorm.DB, error) {

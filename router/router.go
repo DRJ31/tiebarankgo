@@ -33,12 +33,12 @@ func GetUsers(c *fiber.Ctx) error {
 	defer rdb.Close()
 
 	// Get page information
-	page, err := strconv.ParseUint(pg, 10, C.BITSIZE)
+	page, err := strconv.ParseUint(pg, C.BASE, C.BITSIZE)
 	if err != nil {
 		log.Printf("Page parse err: %v", err)
 		return err
 	}
-	pageSize, err := strconv.ParseUint(c.Query("pageSize"), 10, C.BITSIZE)
+	pageSize, err := strconv.ParseUint(c.Query("pageSize"), C.BASE, C.BITSIZE)
 	if err != nil {
 		log.Printf("PageSize parse err: %v", err)
 		return err
@@ -54,14 +54,9 @@ func GetUsers(c *fiber.Ctx) error {
 	}
 
 	// Get total number of genshin tieba member
-	total, err := rdb.Get(ctx, "tieba_genshin_member_total").Result()
+	total, err := rdb.Get(ctx, "tieba_genshin_member_total").Uint64()
 	if err != nil {
 		total = C.MINUSER
-	}
-	totalMember, err := strconv.ParseUint(total, 10, C.BITSIZE)
-	if err != nil {
-		log.Println(err)
-		return err
 	}
 
 	// Check if the users in the page are cached
@@ -137,7 +132,7 @@ func GetUsers(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"users": result,
-		"total": totalMember,
+		"total": total,
 	})
 }
 
@@ -205,7 +200,7 @@ func GetEvent(c *fiber.Ctx) error {
 	dayStr := strings.Split(day, "-")
 	dayInt := make([]int, 0, 3)
 	for _, ds := range dayStr {
-		di, err := strconv.ParseInt(ds, 10, C.BITSIZE)
+		di, err := strconv.ParseInt(ds, C.BASE, C.BITSIZE)
 		if err != nil {
 			log.Println(err)
 			return err
@@ -273,6 +268,75 @@ func GetEvents(c *fiber.Ctx) error {
 		"days":   days,
 		"events": results,
 	})
+}
+
+func GetOnePost(c *fiber.Ctx) error {
+	token := c.Query("token")
+	date := c.Query("date")
+	if !secrets.TokenCheck(C.SALT, date, token) {
+		c.Status(400)
+		return c.JSON(fiber.Map{"message": "Invalid Request"})
+	}
+
+	posts, _, err := crawler.GetTotal()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	return c.JSON(fiber.Map{"total": posts})
+}
+
+func GetMultiplePosts(c *fiber.Ctx) error {
+	token := c.Query("token")
+	page := c.Query("page")
+	if !secrets.TokenCheck(C.SALT, page, token) {
+		c.Status(400)
+		return c.JSON(fiber.Map{"message": "Invalid Request"})
+	}
+
+	db, err := model.Init()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer model.Close(db)
+
+	var data []model.Post
+	var results []model.PostRet
+	db.Order("date desc").Find(&data)
+
+	for _, d := range data {
+		results = append(results, model.PostRet{
+			Total: d.Total,
+			Date:  d.Date.Format(C.DATEFMT),
+		})
+	}
+
+	return c.JSON(fiber.Map{"results": results})
+}
+
+func FindUsers(c *fiber.Ctx) error {
+	token := c.Query("token")
+	keyword := c.Query("keyword")
+	if !secrets.TokenCheck(C.SALT, keyword, token) {
+		c.Status(400)
+		return c.JSON(fiber.Map{"message": "Invalid Request"})
+	}
+
+	keyword = "%" + keyword + "%"
+	var users []model.User
+
+	db, err := model.Init()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer model.Close(db)
+
+	db.Where("name LIKE ?", keyword).Or("nickname LIKE ?", keyword).Find(&users)
+
+	return c.JSON(fiber.Map{"users": users})
 }
 
 func inArr(arr []string, str string) bool {

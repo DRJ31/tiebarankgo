@@ -15,6 +15,9 @@ func InitRouter(app *fiber.App) {
 	app.Get("/api/v2/tieba/event", router.GetEvent)
 	app.Get("/api/v2/tieba/anniversary", router.GetAnniversaries)
 	app.Get("/api/v2/tieba/events", router.GetEvents)
+	app.Get("/api/v2/tieba/post", router.GetOnePost)
+	app.Get("/api/v2/tieba/posts", router.GetMultiplePosts)
+	app.Get("/api/v2/tieba/user", router.FindUsers)
 }
 
 func main() {
@@ -23,5 +26,5 @@ func main() {
 	app.Use(compress.New())
 	InitRouter(app)
 	cf := config.GetConfig()
-	app.Listen(fmt.Sprintf("%v:%v", cf.Host, cf.Port))
+	_ = app.Listen(fmt.Sprintf("%v:%v", cf.Host, cf.Port))
 }

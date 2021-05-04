@@ -19,3 +19,8 @@ type EventRet struct {
 	Event string `json:"event"`
 	Date  string `json:"date"`
 }
+
+type PostRet struct {
+	Date  string `json:"date"`
+	Total uint   `json:"total"`
+}
