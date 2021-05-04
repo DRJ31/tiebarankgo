@@ -14,3 +14,8 @@ type UserAvatar struct {
 	Avatar   string `json:"avatar"`
 	Nickname string `json:"nickname"`
 }
+
+type EventRet struct {
+	Event string `json:"event"`
+	Date  string `json:"date"`
+}

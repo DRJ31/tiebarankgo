@@ -11,7 +11,9 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 	"log"
+	"sort"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -121,6 +123,7 @@ func GetUsers(c *fiber.Ctx) error {
 		db.Create(&uss)
 	}
 
+	// Decide how many data to display according to page size
 	var result []model.TiebaUser
 	if pageSize == 10 {
 		if page%2 != 0 {
@@ -147,7 +150,7 @@ func GetUser(c *fiber.Ctx) error {
 
 	if !secrets.TokenCheck(C.SALT, ul.Link, ul.Token) {
 		c.Status(400)
-		return c.JSON(fiber.Map{"message": "Invalid request"})
+		return c.JSON(fiber.Map{"message": "Invalid Request"})
 	}
 
 	// Get user information
@@ -159,6 +162,7 @@ func GetUser(c *fiber.Ctx) error {
 	// Initialize database
 	db, err := model.Init()
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 	defer model.Close(db)
@@ -172,4 +176,110 @@ func GetUser(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"user": result,
 	})
+}
+
+func GetAnniversaries(c *fiber.Ctx) error {
+	var anniversaries []model.Anniversary
+
+	//
+	db, err := model.Init()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer model.Close(db)
+
+	db.Find(&anniversaries)
+
+	return c.JSON(fiber.Map{"anniversaries": anniversaries})
+}
+
+func GetEvent(c *fiber.Ctx) error {
+	token := c.Query("token")
+	day := c.Query("date")
+	if !secrets.TokenCheck(C.SALT, day, token) {
+		c.Status(400)
+		return c.JSON(fiber.Map{"message": "Invalid Request"})
+	}
+
+	dayStr := strings.Split(day, "-")
+	dayInt := make([]int, 0, 3)
+	for _, ds := range dayStr {
+		di, err := strconv.ParseInt(ds, 10, C.BITSIZE)
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		dayInt = append(dayInt, int(di))
+	}
+	d := time.Date(dayInt[0], time.Month(dayInt[1]), dayInt[2], 0, 0, 0, 0, time.Local)
+
+	// Initialize database
+	db, err := model.Init()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer model.Close(db)
+
+	var events []string
+	var data []model.Event
+	result := db.Find(&data, "date = ?", d)
+	if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		for _, e := range data {
+			events = append(events, e.Event)
+		}
+	}
+
+	return c.JSON(fiber.Map{"event": events})
+}
+
+func GetEvents(c *fiber.Ctx) error {
+	db, err := model.Init()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer model.Close(db)
+
+	var days, event []string
+	var results []model.EventRet
+	var data []model.Event
+	res := db.Find(&data, "date = ?", time.Now())
+	if !errors.Is(res.Error, gorm.ErrRecordNotFound) {
+		for _, e := range data {
+			event = append(event, e.Event)
+		}
+	}
+
+	db.Find(&data)
+	for _, e := range data {
+		dayStr := e.Date.Format(C.DATEFMT)
+		results = append(results, model.EventRet{
+			Event: e.Event,
+			Date:  dayStr,
+		})
+		if !inArr(days, dayStr) {
+			days = append(days, dayStr)
+		}
+	}
+
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].Date > results[j].Date
+	})
+
+	return c.JSON(fiber.Map{
+		"event":  event,
+		"days":   days,
+		"events": results,
+	})
+}
+
+func inArr(arr []string, str string) bool {
+	for _, s := range arr {
+		if s == str {
+			return true
+		}
+	}
+	return false
 }

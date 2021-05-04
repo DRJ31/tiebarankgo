@@ -60,7 +60,7 @@ func GetUsers(tieba string, page uint) ([]model.TiebaUser, error) {
 	defer model.Close(db)
 
 	// Get total users
-	total, err := strconv.ParseUint(doc.Find(".drl_info_txt_gray").Text(), 10, 32)
+	total, err := strconv.ParseUint(doc.Find(".drl_info_txt_gray").Text(), 10, C.BITSIZE)
 	if err != nil {
 		log.Printf("Total parse err: %v", err)
 	}

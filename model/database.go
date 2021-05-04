@@ -5,6 +5,7 @@ import (
 	"github.com/DRJ31/tiebarankgo/config"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"time"
 )
 
 type User struct {
@@ -18,8 +19,30 @@ type User struct {
 	Member   bool   `json:"member"`
 }
 
+type Anniversary struct {
+	Id          uint   `json:"id"`
+	Date        string `json:"date"`
+	Event       string `json:"event"`
+	Adj         string `json:"adj"`
+	Description string `json:"description"`
+}
+
+type Event struct {
+	Id    uint      `json:"id"`
+	Date  time.Time `json:"date"`
+	Event string    `json:"event"`
+}
+
 func (User) TableName() string {
 	return "user"
+}
+
+func (Anniversary) TableName() string {
+	return "anniversary"
+}
+
+func (Event) TableName() string {
+	return "event"
 }
 
 func Init() (*gorm.DB, error) {
