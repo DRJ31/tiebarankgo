@@ -47,6 +47,12 @@ func getDelta(newMap, oldMap map[uint]uint) []model.DistRet {
 		}
 	}
 
+	var sum uint = 0
+	for i := range result {
+		sum += result[i].Rank
+		result[i].Rank = sum
+	}
+
 	return result
 }
 
