@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"sort"
 	"strconv"
 	"sync"
 )
@@ -34,9 +35,13 @@ func getDelta(newMap, oldMap map[uint]uint) []model.DistRet {
 		})
 	}
 
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].Level > result[j].Level
+	})
+
 	for k, v := range oldMap {
 		for i := range result {
-			if result[i].Rank == k {
+			if result[i].Level == k {
 				result[i].Delta -= int(v)
 			}
 		}
@@ -95,4 +100,33 @@ func getDist(level, rank uint, server string, ch chan model.DistRet, wg *sync.Wa
 	}
 
 	ch <- result
+}
+
+func convertDivider(old map[uint]uint) map[uint]uint {
+	var tmp []model.DistInfo
+	mp := make(map[uint]uint)
+
+	for k, v := range old {
+		tmp = append(tmp, model.DistInfo{
+			Level: k,
+			Rank:  v,
+		})
+	}
+
+	sort.Slice(tmp, func(i, j int) bool {
+		return tmp[i].Level > tmp[j].Level
+	})
+
+	var sum uint = 0
+	for i := range tmp {
+		if i > 0 {
+			tmp[i].Rank -= sum
+		}
+		sum += tmp[i].Rank
+	}
+
+	for _, elem := range tmp {
+		mp[elem.Level] = elem.Rank
+	}
+	return mp
 }

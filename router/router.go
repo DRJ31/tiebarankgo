@@ -463,7 +463,7 @@ func GetDist(c *fiber.Ctx) error {
 				newDivider[dr.Level] = dr.Rank
 				db.Model(&model.Divider{}).Where("level = ?", dr.Level).Update("rank", dr.Rank)
 			}
-			dist = getDelta(newDivider, oldDivider)
+			dist = getDelta(convertDivider(newDivider), oldDivider)
 		} else {
 			err = json.Unmarshal(byteDivider, &dist)
 			if err != nil {
