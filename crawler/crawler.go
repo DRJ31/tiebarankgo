@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -182,6 +183,63 @@ func GetUser(url string) (model.UserAvatar, error) {
 	nicknameArr := strings.Split(doc.Find("title").Text(), "的贴吧")
 
 	return model.UserAvatar{Avatar: avatar, Nickname: nicknameArr[0]}, nil
+}
+
+// Get multiple users in a page
+func GetDistribution(tieba string, page int, level uint, ch chan uint, wg *sync.WaitGroup) {
+	defer wg.Done()
+	url := fmt.Sprintf("http://tieba.baidu.com/f/like/furank?kw=%s&pn=%v", tieba, page)
+
+	// Get content of webpage
+	res, err := http.Get(url)
+	if err != nil {
+		log.Printf("Crawl err: %v", err)
+		return
+	}
+
+	// Ensure correct display of Chinese
+	utf8Reader := transform.NewReader(res.Body, simplifiedchinese.GBK.NewDecoder())
+	defer res.Body.Close()
+	if res.StatusCode != 200 {
+		log.Printf("Status code err: %d %s", res.StatusCode, res.Status)
+		return
+	}
+
+	// Create document from webpage
+	doc, err := goquery.NewDocumentFromReader(utf8Reader)
+	if err != nil {
+		log.Printf("New document err: %v", err)
+		return
+	}
+
+	doc.Find(".drl_list_item").Each(func(i int, s *goquery.Selection) {
+		// Get Rank of user
+		rank, e := strconv.ParseUint(s.Find(".drl_item_index").Text(), C.BASE, C.BITSIZE)
+		if e != nil {
+			log.Printf("Rank parse err: %v", e)
+			err = e
+			return
+		}
+
+		// Get level string of user
+		levelStr, ok := s.Find(".drl_item_title").Find("div").Attr("class")
+		if !ok {
+			log.Println("Failed to find level")
+			err = &MyError{"Failed to find level"}
+			return
+		}
+		levelStr = strings.Split(levelStr, "lv")[1]
+		lv, e := strconv.ParseUint(levelStr, C.BASE, C.BITSIZE)
+		if e != nil {
+			log.Printf("Level parse err: %v", e)
+			err = e
+			return
+		}
+
+		if uint(lv) < level {
+			ch <- uint(rank)
+		}
+	})
 }
 
 // Get total number of posts and members

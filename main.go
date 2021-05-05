@@ -11,13 +11,14 @@ import (
 
 func InitRouter(app *fiber.App) {
 	app.Get("/api/v2/tieba/users", router.GetUsers)
-	app.Post("/api/v2/tieba/user", router.GetUser)
 	app.Get("/api/v2/tieba/event", router.GetEvent)
 	app.Get("/api/v2/tieba/anniversary", router.GetAnniversaries)
 	app.Get("/api/v2/tieba/events", router.GetEvents)
 	app.Get("/api/v2/tieba/post", router.GetOnePost)
 	app.Get("/api/v2/tieba/posts", router.GetMultiplePosts)
 	app.Get("/api/v2/tieba/user", router.FindUsers)
+	app.Post("/api/v2/tieba/user", router.GetUser)
+	app.Post("/api/v2/tieba/rank", router.GetRank)
 }
 
 func main() {

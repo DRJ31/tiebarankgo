@@ -11,14 +11,17 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 	"log"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
 var ctx = context.Background()
 
+// Get users of a page
 func GetUsers(c *fiber.Ctx) error {
 	// Check token
 	token := c.Query("token")
@@ -136,6 +139,7 @@ func GetUsers(c *fiber.Ctx) error {
 	})
 }
 
+// Get avatar of a user
 func GetUser(c *fiber.Ctx) error {
 	var ul model.UserLink
 
@@ -173,10 +177,11 @@ func GetUser(c *fiber.Ctx) error {
 	})
 }
 
+// Get all anniversaries
 func GetAnniversaries(c *fiber.Ctx) error {
 	var anniversaries []model.Anniversary
 
-	//
+	// Initialize database
 	db, err := model.Init()
 	if err != nil {
 		log.Println(err)
@@ -189,6 +194,7 @@ func GetAnniversaries(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"anniversaries": anniversaries})
 }
 
+// Get event of today
 func GetEvent(c *fiber.Ctx) error {
 	token := c.Query("token")
 	day := c.Query("date")
@@ -229,6 +235,7 @@ func GetEvent(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"event": events})
 }
 
+// Get all events
 func GetEvents(c *fiber.Ctx) error {
 	db, err := model.Init()
 	if err != nil {
@@ -270,6 +277,7 @@ func GetEvents(c *fiber.Ctx) error {
 	})
 }
 
+// Get post info of today
 func GetOnePost(c *fiber.Ctx) error {
 	token := c.Query("token")
 	date := c.Query("date")
@@ -287,6 +295,7 @@ func GetOnePost(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"total": posts})
 }
 
+// Get all posts info
 func GetMultiplePosts(c *fiber.Ctx) error {
 	token := c.Query("token")
 	page := c.Query("page")
@@ -316,6 +325,7 @@ func GetMultiplePosts(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"results": results})
 }
 
+// Find users by keyword
 func FindUsers(c *fiber.Ctx) error {
 	token := c.Query("token")
 	keyword := c.Query("keyword")
@@ -339,11 +349,46 @@ func FindUsers(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"users": users})
 }
 
-func inArr(arr []string, str string) bool {
-	for _, s := range arr {
-		if s == str {
-			return true
-		}
+// Get distribution of specific rank
+func GetRank(c *fiber.Ctx) error {
+	var info model.RankInfo
+	err := c.BodyParser(&info)
+	if err != nil {
+		log.Println(err)
+		return err
 	}
-	return false
+
+	var MAXTHREAD = runtime.NumCPU() * C.THREADS
+	var wg sync.WaitGroup
+	var min uint = 0
+
+	if !secrets.TokenCheck(C.SALT, strconv.FormatUint(uint64(info.Rank), 10), info.Token) {
+		c.Status(400)
+		return c.JSON(fiber.Map{"message": "Invalid Request"})
+	}
+
+	startPage := info.Rank / 20
+
+	for {
+		ch := make(chan uint)
+		for i := 0; i < MAXTHREAD; i++ {
+			wg.Add(1)
+			go crawler.GetDistribution(C.TIEBA, int(startPage)+i, info.Level, ch, &wg)
+		}
+		go func() {
+			wg.Wait()
+			close(ch)
+		}()
+		for rank := range ch {
+			if min == 0 || rank < min {
+				min = rank
+			}
+		}
+		if min > 0 {
+			break
+		}
+		startPage += uint(MAXTHREAD)
+	}
+
+	return c.JSON(fiber.Map{"rank": min})
 }
