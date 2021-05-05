@@ -20,6 +20,7 @@ func InitRouter(app *fiber.App) {
 	app.Get("/api/v2/tieba/distribution", router.GetDist)
 	app.Post("/api/v2/tieba/user", router.GetUser)
 	app.Post("/api/v2/tieba/rank", router.GetRank)
+	app.Post("/api/v2/tieba/post", router.InsertPostInfo)
 }
 
 func main() {

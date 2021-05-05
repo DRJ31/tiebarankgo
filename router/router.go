@@ -553,3 +553,64 @@ func GetDist(c *fiber.Ctx) error {
 		})
 	}
 }
+
+func InsertPostInfo(c *fiber.Ctx) error {
+	var postInfo model.PostInfo
+	err := c.BodyParser(&postInfo)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	rdb := model.InitRedis()
+	defer rdb.Close()
+
+	db, err := model.Init()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	members, err := rdb.Get(ctx, "tieba_genshin_member_total").Uint64()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	var users []model.User
+	queryRes := db.Find(&users, "member = ?", 1)
+	vip := queryRes.RowsAffected
+
+	if !secrets.TokenCheck(C.SALT, strconv.FormatUint(uint64(postInfo.Total), 10), postInfo.Token) {
+		c.Status(400)
+		return c.JSON(fiber.Map{"message": "Invalid Request"})
+	}
+
+	post := model.Post{
+		Total:     postInfo.Total,
+		Date:      time.Now(),
+		Followers: postInfo.Followers,
+		Members:   uint(members),
+		Vip:       uint(vip),
+		Signin:    postInfo.Signin,
+	}
+	db.Create(&post)
+
+	var distribute []model.Divider
+	db.Find(&distribute)
+	distMap := make(map[uint]uint)
+	for _, v := range distribute {
+		distMap[v.Level] = v.Rank
+	}
+	distByte, err := json.Marshal(distMap)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	db.Create(&model.History{
+		Date:         time.Now(),
+		Distribution: string(distByte),
+	})
+
+	return c.JSON(fiber.Map{"data": post})
+}
