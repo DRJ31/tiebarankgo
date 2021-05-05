@@ -410,7 +410,7 @@ func GetDist(c *fiber.Ctx) error {
 		return err
 	}
 
-	currentDate := time.Now().Truncate(time.Hour * 24)
+	currentDate := time.Now().Add(time.Hour * 8).Truncate(time.Hour * 24)
 	var oldDivider map[uint]uint
 	if day.Equal(currentDate) {
 		rdb := model.InitRedis()
