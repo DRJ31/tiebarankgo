@@ -237,7 +237,7 @@ func GetDistribution(tieba string, page int, level uint, ch chan uint, wg *sync.
 		}
 
 		if uint(lv) < level {
-			ch <- uint(rank)
+			ch <- uint(rank - 1)
 		}
 	})
 }

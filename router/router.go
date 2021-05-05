@@ -14,7 +14,6 @@ import (
 	"runtime"
 	"sort"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 )
@@ -203,17 +202,11 @@ func GetEvent(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"message": "Invalid Request"})
 	}
 
-	dayStr := strings.Split(day, "-")
-	dayInt := make([]int, 0, 3)
-	for _, ds := range dayStr {
-		di, err := strconv.ParseInt(ds, C.BASE, C.BITSIZE)
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-		dayInt = append(dayInt, int(di))
+	d, err := time.Parse(C.DATEFMT, day)
+	if err != nil {
+		log.Println(err)
+		return err
 	}
-	d := time.Date(dayInt[0], time.Month(dayInt[1]), dayInt[2], 0, 0, 0, 0, time.Local)
 
 	// Initialize database
 	db, err := model.Init()
@@ -223,9 +216,9 @@ func GetEvent(c *fiber.Ctx) error {
 	}
 	defer model.Close(db)
 
-	var events []string
+	events := make([]string, 0)
 	var data []model.Event
-	result := db.Find(&data, "date = ?", d)
+	result := db.Find(&data, "date = ?", d.Format(C.DATEFMT))
 	if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		for _, e := range data {
 			events = append(events, e.Event)
@@ -247,7 +240,7 @@ func GetEvents(c *fiber.Ctx) error {
 	var days, event []string
 	var results []model.EventRet
 	var data []model.Event
-	res := db.Find(&data, "date = ?", time.Now())
+	res := db.Find(&data, "date = ?", time.Now().Format(C.DATEFMT))
 	if !errors.Is(res.Error, gorm.ErrRecordNotFound) {
 		for _, e := range data {
 			event = append(event, e.Event)
@@ -390,5 +383,173 @@ func GetRank(c *fiber.Ctx) error {
 		startPage += uint(MAXTHREAD)
 	}
 
-	return c.JSON(fiber.Map{"rank": min})
+	return c.JSON(fiber.Map{
+		"rank":  min,
+		"level": info.Level,
+	})
+}
+
+func GetDist(c *fiber.Ctx) error {
+	token := c.Query("token")
+	dateStr := c.Query("date")
+	if !secrets.TokenCheck(C.SALT, dateStr, token) {
+		c.Status(400)
+		return c.JSON(fiber.Map{"message": "Invalid Request"})
+	}
+
+	day, err := time.Parse(C.DATEFMT, dateStr)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	// Initialize database
+	db, err := model.Init()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	currentDate := time.Now().Truncate(time.Hour * 24)
+	var oldDivider map[uint]uint
+	if day.Equal(currentDate) {
+		rdb := model.InitRedis()
+		defer rdb.Close()
+
+		var firstDivider model.Divider
+		var firstUser model.User
+		var dividers []model.Divider
+		var history model.History
+
+		db.Order("level desc").First(&firstDivider)
+		db.Order("level desc").First(&firstUser)
+
+		if firstDivider.Level < firstUser.Level {
+			db.Create(&model.Divider{
+				Level: firstUser.Level,
+				Rank:  1,
+			})
+		}
+
+		db.Order("level desc").Find(&dividers)
+		lastDay := day.Add(time.Duration(-24) * time.Hour)
+		res := db.First(&history, "date = ?", lastDay.Format(C.DATEFMT))
+		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+			log.Println(res.Error)
+			return res.Error
+		}
+		err = json.Unmarshal([]byte(history.Distribution), &oldDivider)
+		if err != nil {
+			panic(err)
+			return err
+		}
+
+		var dist []model.DistRet
+		if byteDivider, err := rdb.Get(ctx, "tieba_genshin_divider").Bytes(); err != nil {
+			var wg sync.WaitGroup
+			ch := make(chan model.DistRet)
+
+			for _, div := range dividers {
+				wg.Add(1)
+				go getDist(div.Level, div.Rank, secrets.DistributeServer(div.Level), ch, &wg)
+			}
+			go func() {
+				wg.Wait()
+				close(ch)
+			}()
+
+			newDivider := make(map[uint]uint)
+			for dr := range ch {
+				newDivider[dr.Level] = dr.Rank
+				db.Model(&model.Divider{}).Where("level = ?", dr.Level).Update("rank", dr.Rank)
+			}
+			dist = getDelta(newDivider, oldDivider)
+		} else {
+			err = json.Unmarshal(byteDivider, &dist)
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+		}
+
+		posts, members, err := crawler.GetTotal()
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+
+		membership, err := rdb.Get(ctx, "tieba_genshin_member_total").Uint64()
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+
+		var users []model.User
+		resp := db.Find(&users, "member = ?", 1)
+
+		sort.Slice(dist, func(i, j int) bool {
+			return dist[i].Level > dist[j].Level
+		})
+
+		byteDist, err := json.Marshal(dist)
+		rdb.Set(ctx, "tieba_genshin_divider", byteDist, 10*time.Minute)
+
+		return c.JSON(fiber.Map{
+			"distribution": dist,
+			"total":        members,
+			"membership":   membership,
+			"vip":          resp.RowsAffected,
+			"posts":        posts,
+			"signin":       0,
+		})
+	} else {
+		lastDay := day.Add(time.Duration(-24) * time.Hour)
+		var oldHistory, newHistory model.History
+		var newDivider map[uint]uint
+		var postInfo model.Post
+
+		res := db.First(&newHistory, "date = ?", day.Format(C.DATEFMT))
+		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+			log.Println(res.Error)
+			return res.Error
+		}
+
+		res = db.First(&oldHistory, "date = ?", lastDay.Format(C.DATEFMT))
+		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+			log.Println(res.Error)
+			return res.Error
+		}
+
+		err = json.Unmarshal([]byte(newHistory.Distribution), &newDivider)
+		if err != nil {
+			panic(err)
+			return err
+		}
+		err = json.Unmarshal([]byte(oldHistory.Distribution), &oldDivider)
+		if err != nil {
+			panic(err)
+			return err
+		}
+
+		result := getDelta(newDivider, oldDivider)
+
+		res = db.First(&postInfo, "date = ?", day.Format(C.DATEFMT))
+		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+			log.Println(res.Error)
+			return res.Error
+		}
+
+		sort.Slice(result, func(i, j int) bool {
+			return result[i].Level > result[j].Level
+		})
+
+		return c.JSON(fiber.Map{
+			"distribution": result,
+			"total":        postInfo.Followers,
+			"membership":   postInfo.Members,
+			"vip":          postInfo.Vip,
+			"posts":        postInfo.Total,
+			"signin":       postInfo.Signin,
+		})
+	}
 }

@@ -43,6 +43,18 @@ type Post struct {
 	Signin    uint      `json:"signin"`
 }
 
+type History struct {
+	Id           uint      `json:"id"`
+	Date         time.Time `json:"date"`
+	Distribution string    `json:"distribution"`
+}
+
+type Divider struct {
+	Id    uint `json:"id"`
+	Level uint `json:"level"`
+	Rank  uint `json:"rank"`
+}
+
 func (User) TableName() string {
 	return "user"
 }
@@ -57,6 +69,14 @@ func (Event) TableName() string {
 
 func (Post) TableName() string {
 	return "post"
+}
+
+func (History) TableName() string {
+	return "history"
+}
+
+func (Divider) TableName() string {
+	return "divider"
 }
 
 func Init() (*gorm.DB, error) {

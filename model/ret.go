@@ -24,3 +24,14 @@ type PostRet struct {
 	Date  string `json:"date"`
 	Total uint   `json:"total"`
 }
+
+type DistRet struct {
+	Level uint `json:"level"`
+	Rank  uint `json:"rank"`
+	Delta int  `json:"delta"`
+}
+
+type DistInfo struct {
+	Level uint `json:"level"`
+	Rank  uint `json:"rank"`
+}
