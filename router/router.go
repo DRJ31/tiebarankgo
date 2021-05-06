@@ -602,7 +602,7 @@ func InsertPostInfo(c *fiber.Ctx) error {
 	for _, v := range distribute {
 		distMap[v.Level] = v.Rank
 	}
-	distByte, err := json.Marshal(distMap)
+	distByte, err := json.Marshal(convertDivider(distMap))
 	if err != nil {
 		log.Println(err)
 		return err
