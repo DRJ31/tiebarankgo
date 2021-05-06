@@ -11,6 +11,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 	"log"
+	"math"
 	"runtime"
 	"sort"
 	"strconv"
@@ -360,7 +361,8 @@ func GetRank(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"message": "Invalid Request"})
 	}
 
-	startPage := info.Rank / 20
+	sp := math.Ceil(float64(info.Rank) / 20) // Float format of startPage
+	startPage := uint(sp)
 
 	for {
 		ch := make(chan uint)

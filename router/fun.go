@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strconv"
 	"sync"
+	"time"
 )
 
 func inArr(arr []string, str string) bool {
@@ -58,6 +59,8 @@ func getDelta(newMap, oldMap map[uint]uint) []model.DistRet {
 
 func getDist(level, rank uint, server string, ch chan model.DistRet, wg *sync.WaitGroup) {
 	defer wg.Done()
+
+	start := time.Now()
 
 	token := secrets.Encrypt(C.SALT, strconv.FormatUint(uint64(rank), 10))
 	url := fmt.Sprintf("%v/api/v2/tieba/rank", server)
@@ -105,6 +108,8 @@ func getDist(level, rank uint, server string, ch chan model.DistRet, wg *sync.Wa
 		Delta: int(info.Rank),
 	}
 
+	elapsed := time.Since(start)
+	log.Println(server, level, elapsed)
 	ch <- result
 }
 
