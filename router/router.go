@@ -226,6 +226,14 @@ func GetEvent(c *fiber.Ctx) error {
 		}
 	}
 
+	var upIncome []model.UpIncome
+	result = db.Find(&upIncome, "date = ?", d.Format(C.DATEFMT))
+	if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		for _, e := range upIncome {
+			events = append(events, e.Name+"池")
+		}
+	}
+
 	return c.JSON(fiber.Map{"event": events})
 }
 
