@@ -2,6 +2,7 @@ package crawler
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/DRJ31/tiebarankgo/model"
@@ -11,6 +12,7 @@ import (
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/transform"
 	"gorm.io/gorm"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -305,4 +307,38 @@ func getTotal(rdb *redis.Client, ctx context.Context) (uint, uint, error) {
 	rdb.Set(ctx, "tieba_genshin_post_total", posts, time.Minute)
 
 	return uint(posts), uint(members), nil
+}
+
+func GetIncomeData(start, end time.Time) (model.IncomeData, error) {
+	endTime := end
+	if endTime.Unix() > time.Now().Add(-24*time.Hour).Unix() {
+		endTime = time.Now().Add(-24 * time.Hour)
+	}
+
+	startDate := start.Format(C.SHORT_DATE)
+	endDate := endTime.Format(C.SHORT_DATE)
+
+	url := fmt.Sprintf("https://www.chandashi.com/interf/v1/apps/incomeEstimateLine?country=cn&appId=1467190251&startDate=%v&endDate=%v", startDate, endDate)
+
+	// Get content of webpage
+	res, err := http.Get(url)
+	if err != nil {
+		log.Printf("Crawl err: %v", err)
+		return model.IncomeData{}, err
+	}
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	var income model.IncomeData
+
+	err = json.Unmarshal(body, &income)
+	if err != nil {
+		log.Println(err)
+		return model.IncomeData{}, err
+	}
+
+	return income, nil
 }

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/DRJ31/tiebarankgo/crawler"
 	"github.com/DRJ31/tiebarankgo/model"
 	"github.com/DRJ31/tiebarankgo/secrets"
 	C "github.com/DRJ31/tiebarankgo/secrets/constants"
@@ -140,4 +141,64 @@ func convertDivider(old map[uint]uint) map[uint]uint {
 		mp[elem.Level] = elem.Rank
 	}
 	return mp
+}
+
+func parseIncomeData(incomeData model.IncomeData) ([]model.Income, uint) {
+	incomes := make([]model.Income, 0)
+
+	for _, data := range incomeData.Data.Points[0].Data {
+		incomes = append(incomes, model.Income{Date: data[0], Income: data[1]})
+	}
+
+	return incomes, incomeData.Data.Points[1].Data[0][1]
+}
+
+func refreshData(income *model.UpIncome, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	var max uint = 0
+	var sum uint = 0
+
+	incomeData, err := crawler.GetIncomeData(income.Date, income.Date.Add(4*24*time.Hour))
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	for _, data := range incomeData.Data.Points[0].Data {
+		sum += data[1]
+		if data[1] > max {
+			max = data[1]
+		}
+	}
+
+	income.Income = sum
+	income.Max = max
+}
+
+func getMonthIncome() []model.MonthIncome {
+	startDate, _ := time.Parse(C.SHORT_DATE, "20201001")
+	current := "202010"
+	monthIncome := model.MonthIncome{Date: current, Income: 0}
+	incomes := make([]model.MonthIncome, 0)
+
+	incomeData, err := crawler.GetIncomeData(startDate, time.Now())
+	if err != nil {
+		panic(err)
+	}
+
+	for _, data := range incomeData.Data.Points[0].Data {
+		currentMonth := time.Unix(int64(data[0])/1000, 0).Format(C.MONTHFMT)
+		if currentMonth != current {
+			incomes = append(incomes, monthIncome)
+			nextMonth, _ := time.Parse(C.MONTHFMT, current)
+			current = nextMonth.AddDate(0, 1, 0).Format(C.MONTHFMT)
+			monthIncome = model.MonthIncome{Date: current, Income: 0}
+		}
+		monthIncome.Income += data[1]
+	}
+
+	incomes = append(incomes, monthIncome)
+
+	return incomes
 }

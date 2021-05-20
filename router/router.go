@@ -411,6 +411,7 @@ func GetDist(c *fiber.Ctx) error {
 		log.Println(err)
 		return err
 	}
+	defer model.Close(db)
 
 	currentDate := time.Now().Add(time.Hour * 8).Truncate(time.Hour * 24)
 	var oldDivider map[uint]uint
@@ -572,6 +573,7 @@ func InsertPostInfo(c *fiber.Ctx) error {
 		log.Println(err)
 		return err
 	}
+	defer model.Close(db)
 
 	members, err := rdb.Get(ctx, "tieba_genshin_member_total").Uint64()
 	if err != nil {
@@ -615,4 +617,59 @@ func InsertPostInfo(c *fiber.Ctx) error {
 	})
 
 	return c.JSON(fiber.Map{"data": post})
+}
+
+func GetIncome(c *fiber.Ctx) error {
+	token := c.Query("token")
+	startDate := c.Query("start")
+	endDate := c.Query("end")
+	upIncome := make([]model.UpIncome, 0)
+	var wg sync.WaitGroup
+
+	if !secrets.TokenCheck(C.SALT, startDate+endDate, token) {
+		c.Status(400)
+		return c.JSON(fiber.Map{"message": "Invalid Request"})
+	}
+
+	startTime, _ := time.Parse(C.SHORT_DATE, startDate)
+	endTime, _ := time.Parse(C.SHORT_DATE, endDate)
+	incomeData, err := crawler.GetIncomeData(startTime, endTime)
+	if err != nil {
+		c.Status(500)
+		return err
+	}
+
+	db, err := model.Init()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer model.Close(db)
+
+	// Get data of income in a period of time
+	incomes, average := parseIncomeData(incomeData)
+
+	// Refresh data of UpIncome
+	db.Find(&upIncome)
+	for i := range upIncome {
+		if upIncome[i].Date.Add(30*24*time.Hour).Unix() > time.Now().Unix() {
+			wg.Add(1)
+			refreshData(&upIncome[i], &wg)
+		}
+	}
+	wg.Wait()
+	db.Save(&upIncome)
+
+	sort.Slice(upIncome, func(i, j int) bool {
+		return upIncome[i].Date.Unix() > upIncome[j].Date.Unix()
+	})
+
+	monthIncome := getMonthIncome()
+
+	return c.JSON(fiber.Map{
+		"average": average,
+		"income":  upIncome,
+		"data":    incomes,
+		"month":   monthIncome,
+	})
 }

@@ -55,6 +55,14 @@ type Divider struct {
 	Rank  uint `json:"rank"`
 }
 
+type UpIncome struct {
+	Id     uint      `json:"id"`
+	Name   string    `json:"name"`
+	Date   time.Time `json:"date"`
+	Income uint      `json:"income"`
+	Max    uint      `json:"max"`
+}
+
 func (User) TableName() string {
 	return "user"
 }
@@ -77,6 +85,10 @@ func (History) TableName() string {
 
 func (Divider) TableName() string {
 	return "divider"
+}
+
+func (UpIncome) TableName() string {
+	return "income"
 }
 
 func Init() (*gorm.DB, error) {

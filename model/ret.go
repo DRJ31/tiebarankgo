@@ -35,3 +35,14 @@ type DistInfo struct {
 	Level uint `json:"level"`
 	Rank  uint `json:"rank"`
 }
+
+type Income struct {
+	Date    uint `json:"date"`
+	Income  uint `json:"income"`
+	Average uint `json:"average"`
+}
+
+type MonthIncome struct {
+	Date   string `json:"date"`
+	Income uint   `json:"income"`
+}
