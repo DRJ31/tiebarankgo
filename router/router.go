@@ -21,7 +21,7 @@ import (
 
 var ctx = context.Background()
 
-// Get users of a page
+// GetUsers Get users of a page
 func GetUsers(c *fiber.Ctx) error {
 	// Check token
 	token := c.Query("token")
@@ -139,7 +139,7 @@ func GetUsers(c *fiber.Ctx) error {
 	})
 }
 
-// Get avatar of a user
+// GetUser Get avatar of a user
 func GetUser(c *fiber.Ctx) error {
 	var ul model.UserLink
 
@@ -177,7 +177,7 @@ func GetUser(c *fiber.Ctx) error {
 	})
 }
 
-// Get all anniversaries
+// GetAnniversaries Get all anniversaries
 func GetAnniversaries(c *fiber.Ctx) error {
 	var anniversaries []model.Anniversary
 
@@ -194,7 +194,7 @@ func GetAnniversaries(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"anniversaries": anniversaries})
 }
 
-// Get event of today
+// GetEvent Get event of today
 func GetEvent(c *fiber.Ctx) error {
 	token := c.Query("token")
 	day := c.Query("date")
@@ -229,7 +229,7 @@ func GetEvent(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"event": events})
 }
 
-// Get all events
+// GetEvents Get all events
 func GetEvents(c *fiber.Ctx) error {
 	db, err := model.Init()
 	if err != nil {
@@ -241,6 +241,8 @@ func GetEvents(c *fiber.Ctx) error {
 	var days, event []string
 	var results []model.EventRet
 	var data []model.Event
+	var upIncome []model.UpIncome
+
 	res := db.Find(&data, "date = ?", time.Now().Format(C.DATEFMT))
 	if !errors.Is(res.Error, gorm.ErrRecordNotFound) {
 		for _, e := range data {
@@ -260,6 +262,18 @@ func GetEvents(c *fiber.Ctx) error {
 		}
 	}
 
+	db.Find(&upIncome)
+	for _, d := range upIncome {
+		dayStr := d.Date.Format(C.DATEFMT)
+		results = append(results, model.EventRet{
+			Event: d.Name + "池",
+			Date:  dayStr,
+		})
+		if !inArr(days, dayStr) {
+			days = append(days, dayStr)
+		}
+	}
+
 	sort.Slice(results, func(i, j int) bool {
 		return results[i].Date > results[j].Date
 	})
@@ -271,7 +285,7 @@ func GetEvents(c *fiber.Ctx) error {
 	})
 }
 
-// Get post info of today
+// GetOnePost Get post info of today
 func GetOnePost(c *fiber.Ctx) error {
 	token := c.Query("token")
 	date := c.Query("date")
@@ -289,7 +303,7 @@ func GetOnePost(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"total": posts})
 }
 
-// Get all posts info
+// GetMultiplePosts Get all posts info
 func GetMultiplePosts(c *fiber.Ctx) error {
 	token := c.Query("token")
 	page := c.Query("page")
@@ -319,7 +333,7 @@ func GetMultiplePosts(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"results": results})
 }
 
-// Find users by keyword
+// FindUsers Find users by keyword
 func FindUsers(c *fiber.Ctx) error {
 	token := c.Query("token")
 	keyword := c.Query("keyword")
@@ -343,7 +357,7 @@ func FindUsers(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"users": users})
 }
 
-// Get distribution of specific rank
+// GetRank Get distribution of specific rank
 func GetRank(c *fiber.Ctx) error {
 	var info model.RankInfo
 	err := c.BodyParser(&info)

@@ -31,7 +31,7 @@ func (e *MyError) Error() string {
 
 var ErrUserNotFound = errors.New("user not found")
 
-// Get multiple users in a page
+// GetUsers Get multiple users in a page
 func GetUsers(tieba string, page uint) ([]model.TiebaUser, error) {
 	url := fmt.Sprintf("http://tieba.baidu.com/f/like/furank?kw=%s&pn=%v", tieba, page)
 
@@ -152,7 +152,7 @@ func GetUsers(tieba string, page uint) ([]model.TiebaUser, error) {
 	return tiebaUsers, nil
 }
 
-// Get single user information
+// GetUser Get single user information
 func GetUser(url string) (model.UserAvatar, error) {
 	res, err := http.Get("http://tieba.baidu.com" + url)
 	if err != nil {
@@ -187,7 +187,7 @@ func GetUser(url string) (model.UserAvatar, error) {
 	return model.UserAvatar{Avatar: avatar, Nickname: nicknameArr[0]}, nil
 }
 
-// Get multiple users in a page
+// GetDistribution Get multiple users in a page
 func GetDistribution(tieba string, page int, level uint, ch chan uint, wg *sync.WaitGroup) {
 	defer wg.Done()
 	url := fmt.Sprintf("http://tieba.baidu.com/f/like/furank?kw=%s&pn=%v", tieba, page)
@@ -244,7 +244,7 @@ func GetDistribution(tieba string, page int, level uint, ch chan uint, wg *sync.
 	})
 }
 
-// Get total number of posts and members
+// GetTotal Get total number of posts and members
 func GetTotal() (uint, uint, error) {
 	rdb := model.InitRedis()
 	defer rdb.Close()
