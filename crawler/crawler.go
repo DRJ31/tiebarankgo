@@ -15,6 +15,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/http/cookiejar"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -318,14 +320,36 @@ func GetIncomeData(start, end time.Time) (model.IncomeData, error) {
 	startDate := start.Format(C.SHORT_DATE)
 	endDate := endTime.Format(C.SHORT_DATE)
 
-	url := fmt.Sprintf("https://www.chandashi.com/interf/v1/apps/incomeEstimateLine?country=cn&appId=1467190251&startDate=%v&endDate=%v", startDate, endDate)
+	location := fmt.Sprintf("https://www.chandashi.com/interf/v1/apps/incomeEstimateLine?country=cn&appId=1467190251&startDate=%v&endDate=%v", startDate, endDate)
+
+	// Construct request
+	jar, _ := cookiejar.New(nil)
+	cookies := make([]*http.Cookie, 0)
+	cookies = append(cookies, &http.Cookie{
+		Name:  "cds_session_id",
+		Value: C.SESSION_ID,
+	})
+	cookies = append(cookies, &http.Cookie{
+		Name:  "cds_asm_token",
+		Value: C.ASM_TOKEN,
+	})
+	loc, _ := url.Parse(location)
+	jar.SetCookies(loc, cookies)
+
+	client := &http.Client{Jar: jar}
+
+	req, err := http.NewRequest("GET", location, nil)
+	if err != nil {
+		panic(err)
+	}
 
 	// Get content of webpage
-	res, err := http.Get(url)
+	res, err := client.Do(req)
 	if err != nil {
 		log.Printf("Crawl err: %v", err)
 		return model.IncomeData{}, err
 	}
+	defer res.Body.Close()
 
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
@@ -336,6 +360,8 @@ func GetIncomeData(start, end time.Time) (model.IncomeData, error) {
 
 	err = json.Unmarshal(body, &income)
 	if err != nil {
+		fmt.Println(startDate, endDate)
+		fmt.Printf("%s", body)
 		log.Println(err)
 		return model.IncomeData{}, err
 	}
