@@ -614,7 +614,7 @@ func InsertPostInfo(c *fiber.Ctx) error {
 
 	post := model.Post{
 		Total:     postInfo.Total,
-		Date:      time.Now(),
+		Date:      time.Now().UTC(),
 		Followers: postInfo.Followers,
 		Members:   uint(members),
 		Vip:       uint(vip),
