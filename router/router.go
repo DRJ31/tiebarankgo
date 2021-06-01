@@ -612,6 +612,7 @@ func InsertPostInfo(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"message": "Invalid Request"})
 	}
 
+	// Get current time
 	var now time.Time
 	if time.Now().Hour() < 8 {
 		now = time.Now().AddDate(0, 0, -1)
@@ -641,7 +642,7 @@ func InsertPostInfo(c *fiber.Ctx) error {
 		return err
 	}
 	db.Create(&model.History{
-		Date:         time.Now(),
+		Date:         now,
 		Distribution: string(distByte),
 	})
 
