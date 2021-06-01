@@ -612,9 +612,16 @@ func InsertPostInfo(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"message": "Invalid Request"})
 	}
 
+	var now time.Time
+	if time.Now().Hour() < 8 {
+		now = time.Now().AddDate(0, 0, -1)
+	} else {
+		now = time.Now()
+	}
+
 	post := model.Post{
 		Total:     postInfo.Total,
-		Date:      time.Now().UTC(),
+		Date:      now,
 		Followers: postInfo.Followers,
 		Members:   uint(members),
 		Vip:       uint(vip),
