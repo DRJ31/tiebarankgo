@@ -17,6 +17,8 @@ type Config struct {
 	DBPort    uint   `json:"db_port"`
 	RedisHost string `json:"redis_host"`
 	RedisPort string `json:"redis_port"`
+	SessionId string `json:"session_id"`
+	AsmToken  string `json:"asm_token"`
 }
 
 func GetConfig() Config {

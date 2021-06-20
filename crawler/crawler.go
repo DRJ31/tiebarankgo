@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/DRJ31/tiebarankgo/config"
 	"github.com/DRJ31/tiebarankgo/model"
 	C "github.com/DRJ31/tiebarankgo/secrets/constants"
 	"github.com/PuerkitoBio/goquery"
@@ -323,15 +324,16 @@ func GetIncomeData(start, end time.Time) (model.IncomeData, error) {
 	location := fmt.Sprintf("https://www.chandashi.com/interf/v1/apps/incomeEstimateLine?country=cn&appId=1467190251&startDate=%v&endDate=%v", startDate, endDate)
 
 	// Construct request
+	cf := config.GetConfig()
 	jar, _ := cookiejar.New(nil)
 	cookies := make([]*http.Cookie, 0)
 	cookies = append(cookies, &http.Cookie{
 		Name:  "cds_session_id",
-		Value: C.SESSION_ID,
+		Value: cf.SessionId,
 	})
 	cookies = append(cookies, &http.Cookie{
 		Name:  "cds_asm_token",
-		Value: C.ASM_TOKEN,
+		Value: cf.AsmToken,
 	})
 	loc, _ := url.Parse(location)
 	jar.SetCookies(loc, cookies)
