@@ -680,7 +680,7 @@ func GetIncome(c *fiber.Ctx) error {
 	incomes, average := parseIncomeData(incomeData)
 
 	// Refresh data of UpIncome
-	db.Where("date <= ?", time.Now().Format(C.DATEFMT)).Find(&upIncome)
+	db.Where("date < ?", time.Now().Format(C.DATEFMT)).Find(&upIncome)
 	for i := range upIncome {
 		if upIncome[i].Date.Add(30*24*time.Hour).Unix() > time.Now().Unix() {
 			wg.Add(1)
