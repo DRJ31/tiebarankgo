@@ -3,6 +3,6 @@ from ubuntu
 WORKDIR /app
 COPY tiebarankgo /app
 RUN apt update
-RUN apt install ca-certificates
+RUN apt install -y ca-certificates
 
 CMD ["./tiebarankgo"]
