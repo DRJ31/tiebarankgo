@@ -22,7 +22,7 @@ type Config struct {
 }
 
 func GetConfig() Config {
-	jsonFile, err := os.Open("config.json")
+	jsonFile, err := os.Open("etc/config.json")
 	if err != nil {
 		log.Fatal(err)
 	}
