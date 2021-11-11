@@ -37,6 +37,10 @@ jobs:
       - run:
           name: Deploy
           command: |
-            ssh-keyscan -t rsa pma.drjchn.com >> ~/.ssh/known_hosts
-            ssh ubuntu@pma.drjchn.com < deploy.sh
+            ssh-keyscan -t rsa $HOST2 >> ~/.ssh/known_hosts
+            ssh demonist@$HOST2 < deploy.sh
+            ssh-keyscan -t rsa $HOST3 >> ~/.ssh/known_hosts
+            ssh ubuntu@$HOST3 < deploy.sh
+            ssh-keyscan -t rsa $HOST4 >> ~/.ssh/known_hosts
+            ssh ubuntu@$HOST4 < deploy.sh
             curl -L https://uich.cc/5iavbeH6 | bash
