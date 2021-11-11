@@ -177,8 +177,8 @@ func refreshData(income *model.UpIncome, wg *sync.WaitGroup) {
 }
 
 func getMonthIncome() []model.MonthIncome {
-	startDate, _ := time.Parse(C.SHORT_DATE, "20201001")
-	current := "202010"
+	startDate, _ := time.Parse(C.SHORT_DATE, "20200928")
+	current := "202009"
 	monthIncome := model.MonthIncome{Date: current, Income: 0}
 	incomes := make([]model.MonthIncome, 0)
 
