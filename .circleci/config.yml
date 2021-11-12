@@ -37,6 +37,8 @@ jobs:
       - run:
           name: Deploy
           command: |
+            ssh-keyscan -t rsa $HOST1 >> ~/.ssh/known_hosts
+            ssh demonist@$HOST1 < deploy.sh
             ssh-keyscan -t rsa $HOST2 >> ~/.ssh/known_hosts
             ssh demonist@$HOST2 < deploy.sh
             ssh-keyscan -t rsa $HOST3 >> ~/.ssh/known_hosts
