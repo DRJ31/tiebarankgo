@@ -19,6 +19,12 @@ type Config struct {
 	RedisPort string `json:"redis_port"`
 	SessionId string `json:"session_id"`
 	AsmToken  string `json:"asm_token"`
+	Servers	[]ServerDistribution `json:"servers"`
+}
+
+type ServerDistribution struct {
+	Level	uint `json:"level"`
+	Server	string `json:"server"`
 }
 
 func GetConfig() Config {

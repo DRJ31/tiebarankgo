@@ -9,5 +9,15 @@
   "redis_host": "127.0.0.1",
   "redis_port": "6379",
   "session_id": "",
-  "asm_token": ""
+  "asm_token": "",
+  "servers": [
+    {
+      "level": 7,
+      "server": "203.195.197.172:5005"
+    },
+    {
+      "level": 0,
+      "server": "localhost:5005"
+    }
+  ]
 }
