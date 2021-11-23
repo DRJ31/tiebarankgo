@@ -61,6 +61,7 @@ type UpIncome struct {
 	Date   time.Time `json:"date"`
 	Income uint      `json:"income"`
 	Max    uint      `json:"max"`
+	Short  string    `json:"short"`
 }
 
 func (User) TableName() string {
