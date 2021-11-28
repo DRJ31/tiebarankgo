@@ -1,4 +1,4 @@
-from ubuntu
+FROM ubuntu
 
 WORKDIR /app
 COPY tiebarankgo /app
