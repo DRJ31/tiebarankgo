@@ -13,11 +13,11 @@
   "servers": [
     {
       "level": 7,
-      "server": "203.195.197.172:5005"
+      "server": "1.2.3.4:8080"
     },
     {
       "level": 0,
-      "server": "localhost:5005"
+      "server": "localhost:8443"
     }
   ]
 }
