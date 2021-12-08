@@ -465,7 +465,6 @@ func GetDist(c *fiber.Ctx) error {
 		}
 		err = json.Unmarshal([]byte(history.Distribution), &oldDivider)
 		if err != nil {
-			panic(err)
 			return err
 		}
 
@@ -547,12 +546,10 @@ func GetDist(c *fiber.Ctx) error {
 
 		err = json.Unmarshal([]byte(newHistory.Distribution), &newDivider)
 		if err != nil {
-			panic(err)
 			return err
 		}
 		err = json.Unmarshal([]byte(oldHistory.Distribution), &oldDivider)
 		if err != nil {
-			panic(err)
 			return err
 		}
 

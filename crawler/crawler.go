@@ -342,7 +342,7 @@ func GetIncomeData(start, end time.Time) (model.IncomeData, error) {
 
 	req, err := http.NewRequest("GET", location, nil)
 	if err != nil {
-		panic(err)
+		return model.IncomeData{}, err
 	}
 
 	// Get content of webpage
@@ -355,7 +355,7 @@ func GetIncomeData(start, end time.Time) (model.IncomeData, error) {
 
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		panic(err)
+		return model.IncomeData{}, err
 	}
 
 	var income model.IncomeData
