@@ -226,7 +226,7 @@ func main() {
 
 		fmt.Printf("Page %d done.\n", i)
 
-		if i%2 == 0 {
+		if i%100 == 0 {
 			err = sendUsers(arr, i)
 			if err != nil {
 				panic(err)
