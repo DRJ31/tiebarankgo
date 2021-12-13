@@ -576,6 +576,43 @@ func GetDist(c *fiber.Ctx) error {
 	}
 }
 
+func InsertUsers(c *fiber.Ctx) error {
+	var u model.User
+
+	var usersSent model.SendUsers
+	err := c.BodyParser(&usersSent)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	db, err := model.Init()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer model.Close(db)
+
+	if !secrets.TokenCheck(C.SALT, "genshin"+usersSent.Users[0].Name, usersSent.Token) {
+		c.Status(400)
+		return c.JSON(fiber.Map{"message": "Invalid Request"})
+	}
+
+	for _, user := range usersSent.Users {
+		res := db.First(&u, "name = ?", user.Name)
+		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+			log.Println(res.Error)
+			db.Create(&user)
+		}
+		if u.Nickname != user.Nickname {
+			u.Nickname = user.Nickname
+			db.Save(&u)
+		}
+	}
+
+	return c.JSON(fiber.Map{"message": "Success"})
+}
+
 func InsertPostInfo(c *fiber.Ctx) error {
 	var postInfo model.PostInfo
 	err := c.BodyParser(&postInfo)

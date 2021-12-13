@@ -20,6 +20,11 @@ type PostInfo struct {
 	Signin    uint   `json:"signin" xml:"signin"`
 }
 
+type SendUsers struct {
+	Token string `json:"token"`
+	Users []User `json:"users"`
+}
+
 type IncomeData struct {
 	Code int    `json:"code"`
 	Msg  string `json:"msg"`
