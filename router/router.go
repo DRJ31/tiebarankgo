@@ -593,7 +593,7 @@ func InsertUsers(c *fiber.Ctx) error {
 	}
 	defer model.Close(db)
 
-	if !secrets.TokenCheck(C.SALT, "genshin"+usersSent.Users[0].Name, usersSent.Token) {
+	if !secrets.TokenCheck(C.SALT, usersSent.Users[0].Name, usersSent.Token) {
 		c.Status(400)
 		return c.JSON(fiber.Map{"message": "Invalid Request"})
 	}
