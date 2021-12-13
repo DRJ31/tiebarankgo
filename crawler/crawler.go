@@ -36,10 +36,10 @@ var ErrUserNotFound = errors.New("user not found")
 
 // GetUsers Get multiple users in a page
 func GetUsers(tieba string, page uint) ([]model.TiebaUser, error) {
-	url := fmt.Sprintf("http://tieba.baidu.com/f/like/furank?kw=%s&pn=%v", tieba, page)
+	site := fmt.Sprintf("http://tieba.baidu.com/f/like/furank?kw=%s&pn=%v", tieba, page)
 
 	// Get content of webpage
-	res, err := http.Get(url)
+	res, err := http.Get(site)
 	if err != nil {
 		log.Printf("Crawl err: %v", err)
 		return nil, err
@@ -193,10 +193,10 @@ func GetUser(url string) (model.UserAvatar, error) {
 // GetDistribution Get multiple users in a page
 func GetDistribution(tieba string, page int, level uint, ch chan uint, wg *sync.WaitGroup) {
 	defer wg.Done()
-	url := fmt.Sprintf("http://tieba.baidu.com/f/like/furank?kw=%s&pn=%v", tieba, page)
+	site := fmt.Sprintf("http://tieba.baidu.com/f/like/furank?kw=%s&pn=%v", tieba, page)
 
 	// Get content of webpage
-	res, err := http.Get(url)
+	res, err := http.Get(site)
 	if err != nil {
 		log.Printf("Crawl err: %v", err)
 		return
