@@ -88,7 +88,7 @@ func sendUsers(users []model.TiebaUser, page int) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode == 200 {
-		fmt.Printf("Submission of %d succeeded.", page)
+		fmt.Printf("Submission of %d succeeded.\n", page)
 	} else {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
@@ -265,7 +265,7 @@ func main() {
 			arr = make([]model.TiebaUser, 0)
 			dur := randInt(10, 40)
 			time.Sleep(time.Duration(dur) * time.Second)
-			fmt.Printf("%s Sleeping for %ds", time.Now().Format(C.TIMEFMT), dur)
+			fmt.Printf("%s Sleeping for %ds\n", time.Now().Format(C.TIMEFMT), dur)
 		}
 	}
 
