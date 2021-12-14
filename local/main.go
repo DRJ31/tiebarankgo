@@ -239,7 +239,8 @@ func main() {
 				defer wg.Done()
 				info, e := crawler.GetUser(u.Link)
 				if e != nil {
-					panic(e)
+					log.Println(e)
+					return
 				}
 				u.Nickname = info.Nickname
 				ch <- u
@@ -256,18 +257,13 @@ func main() {
 
 		fmt.Printf("Page %d done.\n", i)
 
-		if i%100 == 0 {
+		if i%10 == 0 {
 			err = sendUsers(arr, i)
 			if err != nil {
 				panic(err)
 			}
 			arr = make([]model.TiebaUser, 0)
-			time.Sleep(time.Duration(randInt(30, 60)) * time.Second)
-			fmt.Printf("%s Sleeping: %d", time.Now().Format(C.TIMEFMT), i)
-		}
-
-		if i%10 == 0 {
-			time.Sleep(time.Duration(randInt(10, 30)) * time.Second)
+			time.Sleep(time.Duration(randInt(10, 40)) * time.Second)
 			fmt.Printf("%s Sleeping: %d", time.Now().Format(C.TIMEFMT), i)
 		}
 	}
