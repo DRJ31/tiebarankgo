@@ -263,8 +263,9 @@ func main() {
 				panic(err)
 			}
 			arr = make([]model.TiebaUser, 0)
-			time.Sleep(time.Duration(randInt(10, 40)) * time.Second)
-			fmt.Printf("%s Sleeping: %d", time.Now().Format(C.TIMEFMT), i)
+			dur := randInt(10, 40)
+			time.Sleep(time.Duration(dur) * time.Second)
+			fmt.Printf("%s Sleeping for %ds", time.Now().Format(C.TIMEFMT), dur)
 		}
 	}
 
