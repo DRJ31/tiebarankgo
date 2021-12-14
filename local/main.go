@@ -15,6 +15,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -34,6 +35,35 @@ type UsersSent struct {
 func randInt(min, max int) int {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	return min + r.Intn(max-min)
+}
+
+func sendNotification(total int, key string) {
+	content := fmt.Sprintf("### 用户信息\n总人数: <font color=\"comment\">%d</font>", total)
+	loc := fmt.Sprintf("https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=%v", key)
+
+	var msg secrets.WxMsgMarkdown
+	msg.Markdown.Content = content
+	msg.Msgtype = "markdown"
+
+	jsonStr, err := json.Marshal(msg)
+	if err != nil {
+		panic(err)
+	}
+	req, err := http.NewRequest("POST", loc, bytes.NewBuffer(jsonStr))
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(string(body))
 }
 
 func sendUsers(users []model.TiebaUser, page int) error {
@@ -240,5 +270,10 @@ func main() {
 			time.Sleep(time.Duration(randInt(10, 30)) * time.Second)
 			fmt.Printf("%s Sleeping: %d", time.Now().Format(C.TIMEFMT), i)
 		}
+	}
+
+	key := os.Getenv("NOTIFY_KEY")
+	if len(key) > 0 {
+		sendNotification(usersRet.Total, key)
 	}
 }
