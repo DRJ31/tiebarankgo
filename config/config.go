@@ -8,23 +8,24 @@ import (
 )
 
 type Config struct {
-	Host      string `json:"host"`
-	Port      uint   `json:"port"`
-	Username  string `json:"username"`
-	Password  string `json:"password"`
-	Database  string `json:"database"`
-	DBHost    string `json:"db_host"`
-	DBPort    uint   `json:"db_port"`
-	RedisHost string `json:"redis_host"`
-	RedisPort string `json:"redis_port"`
-	SessionId string `json:"session_id"`
-	AsmToken  string `json:"asm_token"`
-	Servers	[]ServerDistribution `json:"servers"`
+	Host      string               `json:"host"`
+	Port      uint                 `json:"port"`
+	Username  string               `json:"username"`
+	Password  string               `json:"password"`
+	Database  string               `json:"database"`
+	DBHost    string               `json:"db_host"`
+	DBPort    uint                 `json:"db_port"`
+	RedisHost string               `json:"redis_host"`
+	RedisPort string               `json:"redis_port"`
+	SessionId string               `json:"session_id"`
+	AsmToken  string               `json:"asm_token"`
+	Timeout   int                  `json:"timeout"`
+	Servers   []ServerDistribution `json:"servers"`
 }
 
 type ServerDistribution struct {
-	Level	uint `json:"level"`
-	Server	string `json:"server"`
+	Level  uint   `json:"level"`
+	Server string `json:"server"`
 }
 
 func GetConfig() Config {
