@@ -1,9 +1,8 @@
-FROM ubuntu
+FROM alpine
 
 WORKDIR /app
 COPY tiebarankgo /app
-RUN apt update
-RUN apt install -y ca-certificates
+RUN apk add --no-cache gcompat ca-certificates
 
 CMD ["./tiebarankgo"]
 
