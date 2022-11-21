@@ -8,7 +8,7 @@ import (
 	"github.com/DRJ31/tiebarankgo/model"
 	"github.com/DRJ31/tiebarankgo/secrets"
 	C "github.com/DRJ31/tiebarankgo/secrets/constants"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"sort"
@@ -91,7 +91,7 @@ func getDist(level, rank uint, server string, ch chan model.DistRet, wg *sync.Wa
 		return
 	}
 
-	response, err = ioutil.ReadAll(res.Body)
+	response, err = io.ReadAll(res.Body)
 	if err != nil {
 		log.Println(err)
 		return

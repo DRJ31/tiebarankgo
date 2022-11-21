@@ -2,7 +2,6 @@ package config
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"log"
 	"os"
 )
@@ -35,10 +34,8 @@ func GetConfig() Config {
 	}
 	defer jsonFile.Close()
 
-	data, _ := ioutil.ReadAll(jsonFile)
-
 	var result Config
-	err = json.Unmarshal(data, &result)
+	err = json.NewDecoder(jsonFile).Decode(&result)
 	if err != nil {
 		log.Fatal(err)
 	}
