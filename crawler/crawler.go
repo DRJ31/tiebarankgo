@@ -321,7 +321,7 @@ func GetIncomeData(start, end time.Time) (model.IncomeData, error) {
 	startDate := start.Format(C.SHORT_DATE)
 	endDate := endTime.Format(C.SHORT_DATE)
 
-	location := fmt.Sprintf("https://www.chandashi.com/interf/v1/apps/incomeEstimateLine?country=cn&appId=1467190251&startDate=%v&endDate=%v", startDate, endDate)
+	location := fmt.Sprintf("https://app.chandashi.com/interf/v1/apps/incomeEstimateLine?country=cn&appId=1467190251&startDate=%v&endDate=%v", startDate, endDate)
 
 	// Construct request
 	cf := config.GetConfig()
