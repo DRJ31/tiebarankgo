@@ -17,12 +17,12 @@ func InitRouter(app *fiber.App) {
 	app.Get("/api/v2/tieba/post", router.GetOnePost)
 	app.Get("/api/v2/tieba/posts", router.GetMultiplePosts)
 	app.Get("/api/v2/tieba/user", router.FindUsers)
-	app.Get("/api/v2/tieba/distribution", router.GetDist)
+	//app.Get("/api/v2/tieba/distribution", router.GetDist)
 	app.Get("/api/v2/tieba/income", router.GetIncome)
 	app.Post("/api/v2/tieba/user", router.GetUser)
-	app.Post("/api/v2/tieba/rank", router.GetRank)
+	//app.Post("/api/v2/tieba/rank", router.GetRank)
 	app.Post("/api/v2/tieba/post", router.InsertPostInfo)
-	app.Post("/api/v2/tieba/users", router.InsertUsers)
+	//app.Post("/api/v2/tieba/users", router.InsertUsers)
 }
 
 func main() {
