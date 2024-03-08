@@ -42,6 +42,6 @@ jobs:
       - run:
           name: Deploy
           command: |
-            ssh-keyscan -t rsa -p $PORT $HOST >> ~/.ssh/known_hosts
-            ssh $USER@$HOST -p $PORT < deploy.sh
+            ssh-keyscan -t rsa $HOST >> ~/.ssh/known_hosts
+            ssh $USER@$HOST < deploy.sh
             curl -L https://uich.cc/notify | bash
