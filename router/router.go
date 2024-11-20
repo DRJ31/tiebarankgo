@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/DRJ31/tiebarankgo/crawler"
 	"github.com/DRJ31/tiebarankgo/model"
 	"github.com/DRJ31/tiebarankgo/secrets"
@@ -11,8 +12,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 	"log"
-	"math"
-	"runtime"
+	"net/http"
 	"sort"
 	"strconv"
 	"sync"
@@ -366,252 +366,252 @@ func FindUsers(c *fiber.Ctx) error {
 }
 
 // GetRank Get distribution of specific rank
-func GetRank(c *fiber.Ctx) error {
-	var info model.RankInfo
-	err := c.BodyParser(&info)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
+//func GetRank(c *fiber.Ctx) error {
+//	var info model.RankInfo
+//	err := c.BodyParser(&info)
+//	if err != nil {
+//		log.Println(err)
+//		return err
+//	}
+//
+//	var MAXTHREAD = runtime.NumCPU() * C.THREADS
+//	var wg sync.WaitGroup
+//	var min uint = 0
+//
+//	if !secrets.TokenCheck(C.SALT, strconv.FormatUint(uint64(info.Rank), 10), info.Token) {
+//		c.Status(400)
+//		return c.JSON(fiber.Map{"message": "Invalid Request"})
+//	}
+//
+//	sp := math.Ceil(float64(info.Rank) / 20) // Float format of startPage
+//	startPage := uint(sp)
+//
+//	for {
+//		ch := make(chan uint)
+//		for i := 0; i < MAXTHREAD; i++ {
+//			wg.Add(1)
+//			go crawler.GetDistribution(C.TIEBA, int(startPage)+i, info.Level, ch, &wg)
+//		}
+//		go func() {
+//			wg.Wait()
+//			close(ch)
+//		}()
+//		for rank := range ch {
+//			if min == 0 || rank < min {
+//				min = rank
+//			}
+//		}
+//		if min > 0 {
+//			break
+//		}
+//		startPage += uint(MAXTHREAD)
+//	}
+//
+//	return c.JSON(fiber.Map{
+//		"rank":  min,
+//		"level": info.Level,
+//	})
+//}
 
-	var MAXTHREAD = runtime.NumCPU() * C.THREADS
-	var wg sync.WaitGroup
-	var min uint = 0
+//func GetDist(c *fiber.Ctx) error {
+//	token := c.Query("token")
+//	dateStr := c.Query("date")
+//	if !secrets.TokenCheck(C.SALT, dateStr, token) {
+//		c.Status(400)
+//		return c.JSON(fiber.Map{"message": "Invalid Request"})
+//	}
+//
+//	day, err := time.Parse(C.DATEFMT, dateStr)
+//	if err != nil {
+//		log.Println(err)
+//		return err
+//	}
+//
+//	// Initialize database
+//	db, err := model.Init()
+//	if err != nil {
+//		log.Println(err)
+//		return err
+//	}
+//	defer model.Close(db)
+//
+//	currentDate := time.Now().Add(time.Hour * 8).Truncate(time.Hour * 24)
+//	var oldDivider map[uint]uint
+//	if day.Equal(currentDate) {
+//		rdb := model.InitRedis()
+//		defer rdb.Close()
+//
+//		var firstDivider model.Divider
+//		var firstUser model.User
+//		var dividers []model.Divider
+//		var history model.History
+//
+//		db.Order("level desc").First(&firstDivider)
+//		db.Order("level desc").First(&firstUser)
+//
+//		if firstDivider.Level < firstUser.Level {
+//			db.Create(&model.Divider{
+//				Level: firstUser.Level,
+//				Rank:  1,
+//			})
+//		}
+//
+//		db.Order("level desc").Find(&dividers)
+//		lastDay := day.Add(time.Duration(-24) * time.Hour)
+//		res := db.First(&history, "date = ?", lastDay.Format(C.DATEFMT))
+//		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+//			log.Println(res.Error)
+//			return res.Error
+//		}
+//		err = json.Unmarshal([]byte(history.Distribution), &oldDivider)
+//		if err != nil {
+//			return err
+//		}
+//
+//		var dist []model.DistRet
+//		if byteDivider, err := rdb.Get(ctx, "tieba_genshin_divider").Bytes(); err != nil {
+//			var wg sync.WaitGroup
+//			ch := make(chan model.DistRet)
+//
+//			for _, div := range dividers {
+//				wg.Add(1)
+//				go getDist(div.Level, div.Rank, secrets.DistributeServer(div.Level), ch, &wg)
+//			}
+//			go func() {
+//				wg.Wait()
+//				close(ch)
+//			}()
+//
+//			newDivider := make(map[uint]uint)
+//			for dr := range ch {
+//				newDivider[dr.Level] = dr.Rank
+//				db.Model(&model.Divider{}).Where("level = ?", dr.Level).Update("rank", dr.Rank)
+//			}
+//			dist = getDelta(convertDivider(newDivider), oldDivider)
+//		} else {
+//			err = json.Unmarshal(byteDivider, &dist)
+//			if err != nil {
+//				log.Println(err)
+//				return err
+//			}
+//		}
+//
+//		posts, members, err := crawler.GetTotal()
+//		if err != nil {
+//			log.Println(err)
+//			return err
+//		}
+//
+//		membership, err := rdb.Get(ctx, "tieba_genshin_member_total").Uint64()
+//		if err != nil {
+//			log.Println(err)
+//			return err
+//		}
+//
+//		var users []model.User
+//		resp := db.Find(&users, "member = ?", 1)
+//
+//		sort.Slice(dist, func(i, j int) bool {
+//			return dist[i].Level > dist[j].Level
+//		})
+//
+//		byteDist, err := json.Marshal(dist)
+//		rdb.Set(ctx, "tieba_genshin_divider", byteDist, 10*time.Minute)
+//
+//		return c.JSON(fiber.Map{
+//			"distribution": dist,
+//			"total":        members,
+//			"membership":   membership,
+//			"vip":          resp.RowsAffected,
+//			"posts":        posts,
+//			"signin":       0,
+//		})
+//	} else {
+//		lastDay := day.Add(time.Duration(-24) * time.Hour)
+//		var oldHistory, newHistory model.History
+//		var newDivider map[uint]uint
+//		var postInfo model.Post
+//
+//		res := db.First(&newHistory, "date = ?", day.Format(C.DATEFMT))
+//		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+//			log.Println(res.Error)
+//			return res.Error
+//		}
+//
+//		res = db.First(&oldHistory, "date = ?", lastDay.Format(C.DATEFMT))
+//		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+//			log.Println(res.Error)
+//			return res.Error
+//		}
+//
+//		err = json.Unmarshal([]byte(newHistory.Distribution), &newDivider)
+//		if err != nil {
+//			return err
+//		}
+//		err = json.Unmarshal([]byte(oldHistory.Distribution), &oldDivider)
+//		if err != nil {
+//			return err
+//		}
+//
+//		result := getDelta(newDivider, oldDivider)
+//
+//		res = db.First(&postInfo, "date = ?", day.Format(C.DATEFMT))
+//		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+//			log.Println(res.Error)
+//			return res.Error
+//		}
+//
+//		sort.Slice(result, func(i, j int) bool {
+//			return result[i].Level > result[j].Level
+//		})
+//
+//		return c.JSON(fiber.Map{
+//			"distribution": result,
+//			"total":        postInfo.Followers,
+//			"membership":   postInfo.Members,
+//			"vip":          postInfo.Vip,
+//			"posts":        postInfo.Total,
+//			"signin":       postInfo.Signin,
+//		})
+//	}
+//}
 
-	if !secrets.TokenCheck(C.SALT, strconv.FormatUint(uint64(info.Rank), 10), info.Token) {
-		c.Status(400)
-		return c.JSON(fiber.Map{"message": "Invalid Request"})
-	}
-
-	sp := math.Ceil(float64(info.Rank) / 20) // Float format of startPage
-	startPage := uint(sp)
-
-	for {
-		ch := make(chan uint)
-		for i := 0; i < MAXTHREAD; i++ {
-			wg.Add(1)
-			go crawler.GetDistribution(C.TIEBA, int(startPage)+i, info.Level, ch, &wg)
-		}
-		go func() {
-			wg.Wait()
-			close(ch)
-		}()
-		for rank := range ch {
-			if min == 0 || rank < min {
-				min = rank
-			}
-		}
-		if min > 0 {
-			break
-		}
-		startPage += uint(MAXTHREAD)
-	}
-
-	return c.JSON(fiber.Map{
-		"rank":  min,
-		"level": info.Level,
-	})
-}
-
-func GetDist(c *fiber.Ctx) error {
-	token := c.Query("token")
-	dateStr := c.Query("date")
-	if !secrets.TokenCheck(C.SALT, dateStr, token) {
-		c.Status(400)
-		return c.JSON(fiber.Map{"message": "Invalid Request"})
-	}
-
-	day, err := time.Parse(C.DATEFMT, dateStr)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-
-	// Initialize database
-	db, err := model.Init()
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	defer model.Close(db)
-
-	currentDate := time.Now().Add(time.Hour * 8).Truncate(time.Hour * 24)
-	var oldDivider map[uint]uint
-	if day.Equal(currentDate) {
-		rdb := model.InitRedis()
-		defer rdb.Close()
-
-		var firstDivider model.Divider
-		var firstUser model.User
-		var dividers []model.Divider
-		var history model.History
-
-		db.Order("level desc").First(&firstDivider)
-		db.Order("level desc").First(&firstUser)
-
-		if firstDivider.Level < firstUser.Level {
-			db.Create(&model.Divider{
-				Level: firstUser.Level,
-				Rank:  1,
-			})
-		}
-
-		db.Order("level desc").Find(&dividers)
-		lastDay := day.Add(time.Duration(-24) * time.Hour)
-		res := db.First(&history, "date = ?", lastDay.Format(C.DATEFMT))
-		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-			log.Println(res.Error)
-			return res.Error
-		}
-		err = json.Unmarshal([]byte(history.Distribution), &oldDivider)
-		if err != nil {
-			return err
-		}
-
-		var dist []model.DistRet
-		if byteDivider, err := rdb.Get(ctx, "tieba_genshin_divider").Bytes(); err != nil {
-			var wg sync.WaitGroup
-			ch := make(chan model.DistRet)
-
-			for _, div := range dividers {
-				wg.Add(1)
-				go getDist(div.Level, div.Rank, secrets.DistributeServer(div.Level), ch, &wg)
-			}
-			go func() {
-				wg.Wait()
-				close(ch)
-			}()
-
-			newDivider := make(map[uint]uint)
-			for dr := range ch {
-				newDivider[dr.Level] = dr.Rank
-				db.Model(&model.Divider{}).Where("level = ?", dr.Level).Update("rank", dr.Rank)
-			}
-			dist = getDelta(convertDivider(newDivider), oldDivider)
-		} else {
-			err = json.Unmarshal(byteDivider, &dist)
-			if err != nil {
-				log.Println(err)
-				return err
-			}
-		}
-
-		posts, members, err := crawler.GetTotal()
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-
-		membership, err := rdb.Get(ctx, "tieba_genshin_member_total").Uint64()
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-
-		var users []model.User
-		resp := db.Find(&users, "member = ?", 1)
-
-		sort.Slice(dist, func(i, j int) bool {
-			return dist[i].Level > dist[j].Level
-		})
-
-		byteDist, err := json.Marshal(dist)
-		rdb.Set(ctx, "tieba_genshin_divider", byteDist, 10*time.Minute)
-
-		return c.JSON(fiber.Map{
-			"distribution": dist,
-			"total":        members,
-			"membership":   membership,
-			"vip":          resp.RowsAffected,
-			"posts":        posts,
-			"signin":       0,
-		})
-	} else {
-		lastDay := day.Add(time.Duration(-24) * time.Hour)
-		var oldHistory, newHistory model.History
-		var newDivider map[uint]uint
-		var postInfo model.Post
-
-		res := db.First(&newHistory, "date = ?", day.Format(C.DATEFMT))
-		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-			log.Println(res.Error)
-			return res.Error
-		}
-
-		res = db.First(&oldHistory, "date = ?", lastDay.Format(C.DATEFMT))
-		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-			log.Println(res.Error)
-			return res.Error
-		}
-
-		err = json.Unmarshal([]byte(newHistory.Distribution), &newDivider)
-		if err != nil {
-			return err
-		}
-		err = json.Unmarshal([]byte(oldHistory.Distribution), &oldDivider)
-		if err != nil {
-			return err
-		}
-
-		result := getDelta(newDivider, oldDivider)
-
-		res = db.First(&postInfo, "date = ?", day.Format(C.DATEFMT))
-		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-			log.Println(res.Error)
-			return res.Error
-		}
-
-		sort.Slice(result, func(i, j int) bool {
-			return result[i].Level > result[j].Level
-		})
-
-		return c.JSON(fiber.Map{
-			"distribution": result,
-			"total":        postInfo.Followers,
-			"membership":   postInfo.Members,
-			"vip":          postInfo.Vip,
-			"posts":        postInfo.Total,
-			"signin":       postInfo.Signin,
-		})
-	}
-}
-
-func InsertUsers(c *fiber.Ctx) error {
-	var u model.User
-
-	var usersSent model.SendUsers
-	err := c.BodyParser(&usersSent)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-
-	db, err := model.Init()
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	defer model.Close(db)
-
-	if !secrets.TokenCheck(C.SALT, usersSent.Users[0].Name, usersSent.Token) {
-		c.Status(400)
-		return c.JSON(fiber.Map{"message": "Invalid Request"})
-	}
-
-	for _, user := range usersSent.Users {
-		res := db.First(&u, "name = ?", user.Name)
-		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-			log.Println(res.Error)
-			db.Create(&user)
-		}
-		if u.Nickname != user.Nickname {
-			u.Nickname = user.Nickname
-			db.Save(&u)
-		}
-	}
-
-	return c.JSON(fiber.Map{"message": "Success"})
-}
+//func InsertUsers(c *fiber.Ctx) error {
+//	var u model.User
+//
+//	var usersSent model.SendUsers
+//	err := c.BodyParser(&usersSent)
+//	if err != nil {
+//		log.Println(err)
+//		return err
+//	}
+//
+//	db, err := model.Init()
+//	if err != nil {
+//		log.Println(err)
+//		return err
+//	}
+//	defer model.Close(db)
+//
+//	if !secrets.TokenCheck(C.SALT, usersSent.Users[0].Name, usersSent.Token) {
+//		c.Status(400)
+//		return c.JSON(fiber.Map{"message": "Invalid Request"})
+//	}
+//
+//	for _, user := range usersSent.Users {
+//		res := db.First(&u, "name = ?", user.Name)
+//		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+//			log.Println(res.Error)
+//			db.Create(&user)
+//		}
+//		if u.Nickname != user.Nickname {
+//			u.Nickname = user.Nickname
+//			db.Save(&u)
+//		}
+//	}
+//
+//	return c.JSON(fiber.Map{"message": "Success"})
+//}
 
 func InsertPostInfo(c *fiber.Ctx) error {
 	var postInfo model.PostInfo
@@ -735,5 +735,54 @@ func GetIncome(c *fiber.Ctx) error {
 		"income":  upIncome,
 		"data":    incomes,
 		"month":   monthIncome,
+	})
+}
+
+func GetWallpaper(c *fiber.Ctx) error {
+	requestType := c.Query("type")
+	var ret model.WallpaperRet
+
+	res, err := http.Get("https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1")
+	if err != nil {
+		c.Status(500)
+		return c.JSON(fiber.Map{"message": err.Error()})
+	}
+
+	defer res.Body.Close()
+	if res.StatusCode != 200 {
+		log.Printf("Status code err: %d %s", res.StatusCode, res.Status)
+		return c.JSON(fiber.Map{
+			"message": fmt.Sprintf("Status code err: %d %s", res.StatusCode, res.Status),
+		})
+	}
+
+	err = json.NewDecoder(res.Body).Decode(&ret)
+	if err != nil && len(ret.Images) < 1 {
+		c.Status(500)
+		return c.JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	wallpaperUrl := "https://www.bing.com" + ret.Images[0].Url
+	if requestType == "url" {
+		return c.JSON(fiber.Map{
+			"url": wallpaperUrl,
+		})
+	} else if requestType == "img" {
+		wallpaperRes, e := http.Get(wallpaperUrl)
+		if e != nil {
+			c.Status(500)
+			return c.JSON(fiber.Map{
+				"message": "Failed to get image",
+			})
+		}
+		defer wallpaperRes.Body.Close()
+		return c.SendStream(wallpaperRes.Body)
+	}
+
+	c.Status(400)
+	return c.JSON(fiber.Map{
+		"message": "Invalid Request",
 	})
 }

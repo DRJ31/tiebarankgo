@@ -46,3 +46,25 @@ type MonthIncome struct {
 	Date   string `json:"date"`
 	Income uint   `json:"income"`
 }
+
+type WallpaperImage struct {
+	Startdate     string        `json:"startdate"`
+	Fullstartdate string        `json:"fullstartdate"`
+	Enddate       string        `json:"enddate"`
+	Url           string        `json:"url"`
+	Urlbase       string        `json:"urlbase"`
+	Copyright     string        `json:"copyright"`
+	Copyrightlink string        `json:"copyrightlink"`
+	Title         string        `json:"title"`
+	Quiz          string        `json:"quiz"`
+	Wp            bool          `json:"wp"`
+	Hsh           string        `json:"hsh"`
+	Drk           int           `json:"drk"`
+	Top           int           `json:"top"`
+	Bot           int           `json:"bot"`
+	Hs            []interface{} `json:"hs"`
+}
+
+type WallpaperRet struct {
+	Images []WallpaperImage `json:"images"`
+}
