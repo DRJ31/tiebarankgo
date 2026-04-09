@@ -39,9 +39,4 @@ jobs:
           command: |
             docker login -u $DOCKER_USER -p $DOCKER_PASS
             bash updateManifest.sh
-      - run:
-          name: Deploy
-          command: |
-            ssh-keyscan -t rsa $HOST >> ~/.ssh/known_hosts
-            ssh $USER@$HOST < deploy.sh
             curl -L https://uich.cc/notify | bash

@@ -5,14 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/DRJ31/tiebarankgo/config"
-	"github.com/DRJ31/tiebarankgo/model"
-	C "github.com/DRJ31/tiebarankgo/secrets/constants"
-	"github.com/PuerkitoBio/goquery"
-	"github.com/go-redis/redis/v8"
-	"golang.org/x/text/encoding/simplifiedchinese"
-	"golang.org/x/text/transform"
-	"gorm.io/gorm"
 	"io"
 	"log"
 	"net/http"
@@ -22,6 +14,15 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/DRJ31/tiebarankgo/config"
+	"github.com/DRJ31/tiebarankgo/model"
+	C "github.com/DRJ31/tiebarankgo/secrets/constants"
+	"github.com/PuerkitoBio/goquery"
+	"github.com/go-redis/redis/v8"
+	"golang.org/x/text/encoding/simplifiedchinese"
+	"golang.org/x/text/transform"
+	"gorm.io/gorm"
 )
 
 type MyError struct {
@@ -180,14 +181,14 @@ func GetUser(url string) (model.UserAvatar, error) {
 		return model.UserAvatar{}, err
 	}
 
-	avatar, ok := doc.Find(".userinfo_left_head").Find("img").Attr("src")
+	avatar, ok := doc.Find(".user-avatar").Find("img").Attr("src")
 	if !ok {
 		return model.UserAvatar{}, ErrUserNotFound
 	}
 
-	nicknameArr := strings.Split(doc.Find("title").Text(), "的贴吧")
+	nickname := doc.Find(".head-name").Text()
 
-	return model.UserAvatar{Avatar: avatar, Nickname: nicknameArr[0]}, nil
+	return model.UserAvatar{Avatar: avatar, Nickname: nickname}, nil
 }
 
 // GetDistribution Get multiple users in a page
