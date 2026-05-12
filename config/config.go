@@ -16,6 +16,7 @@ type Config struct {
 	DBPort    uint                 `json:"db_port"`
 	RedisHost string               `json:"redis_host"`
 	RedisPort string               `json:"redis_port"`
+	RedisPass string               `json:"redis_password"`
 	SessionId string               `json:"session_id"`
 	AsmToken  string               `json:"asm_token"`
 	Timeout   int                  `json:"timeout"`
