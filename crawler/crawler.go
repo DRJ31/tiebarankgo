@@ -19,7 +19,7 @@ import (
 	"github.com/DRJ31/tiebarankgo/model"
 	C "github.com/DRJ31/tiebarankgo/secrets/constants"
 	"github.com/PuerkitoBio/goquery"
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/transform"
 	"gorm.io/gorm"

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"github.com/DRJ31/tiebarankgo/config"
 	"github.com/DRJ31/tiebarankgo/router"
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/compress"
-	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/compress"
+	"github.com/gofiber/fiber/v3/middleware/cors"
 )
 
 func InitRouter(app *fiber.App) {

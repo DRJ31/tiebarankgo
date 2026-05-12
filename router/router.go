@@ -9,7 +9,7 @@ import (
 	"github.com/DRJ31/tiebarankgo/model"
 	"github.com/DRJ31/tiebarankgo/secrets"
 	C "github.com/DRJ31/tiebarankgo/secrets/constants"
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"gorm.io/gorm"
 	"log"
 	"net/http"
@@ -22,7 +22,7 @@ import (
 var ctx = context.Background()
 
 // GetUsers Get users of a page
-func GetUsers(c *fiber.Ctx) error {
+func GetUsers(c fiber.Ctx) error {
 	// Check token
 	token := c.Query("token")
 	pg := c.Query("page")
@@ -140,10 +140,10 @@ func GetUsers(c *fiber.Ctx) error {
 }
 
 // GetUser Get avatar of a user
-func GetUser(c *fiber.Ctx) error {
+func GetUser(c fiber.Ctx) error {
 	var ul model.UserLink
 
-	if err := c.BodyParser(&ul); err != nil {
+	if err := c.Bind().Body(&ul); err != nil {
 		return err
 	}
 
@@ -178,7 +178,7 @@ func GetUser(c *fiber.Ctx) error {
 }
 
 // GetAnniversaries Get all anniversaries
-func GetAnniversaries(c *fiber.Ctx) error {
+func GetAnniversaries(c fiber.Ctx) error {
 	var anniversaries []model.Anniversary
 
 	// Initialize database
@@ -195,7 +195,7 @@ func GetAnniversaries(c *fiber.Ctx) error {
 }
 
 // GetEvent Get event of today
-func GetEvent(c *fiber.Ctx) error {
+func GetEvent(c fiber.Ctx) error {
 	token := c.Query("token")
 	day := c.Query("date")
 	if !secrets.TokenCheck(C.SALT, day, token) {
@@ -238,7 +238,7 @@ func GetEvent(c *fiber.Ctx) error {
 }
 
 // GetEvents Get all events
-func GetEvents(c *fiber.Ctx) error {
+func GetEvents(c fiber.Ctx) error {
 	db, err := model.Init()
 	if err != nil {
 		log.Println(err)
@@ -294,7 +294,7 @@ func GetEvents(c *fiber.Ctx) error {
 }
 
 // GetOnePost Get post info of today
-func GetOnePost(c *fiber.Ctx) error {
+func GetOnePost(c fiber.Ctx) error {
 	token := c.Query("token")
 	date := c.Query("date")
 	if !secrets.TokenCheck(C.SALT, date, token) {
@@ -312,7 +312,7 @@ func GetOnePost(c *fiber.Ctx) error {
 }
 
 // GetMultiplePosts Get all posts info
-func GetMultiplePosts(c *fiber.Ctx) error {
+func GetMultiplePosts(c fiber.Ctx) error {
 	token := c.Query("token")
 	page := c.Query("page")
 	if !secrets.TokenCheck(C.SALT, page, token) {
@@ -342,7 +342,7 @@ func GetMultiplePosts(c *fiber.Ctx) error {
 }
 
 // FindUsers Find users by keyword
-func FindUsers(c *fiber.Ctx) error {
+func FindUsers(c fiber.Ctx) error {
 	token := c.Query("token")
 	keyword := c.Query("keyword")
 	if !secrets.TokenCheck(C.SALT, keyword, token) {
@@ -366,7 +366,7 @@ func FindUsers(c *fiber.Ctx) error {
 }
 
 // GetRank Get distribution of specific rank
-//func GetRank(c *fiber.Ctx) error {
+//func GetRank(c fiber.Ctx) error {
 //	var info model.RankInfo
 //	err := c.BodyParser(&info)
 //	if err != nil {
@@ -413,7 +413,7 @@ func FindUsers(c *fiber.Ctx) error {
 //	})
 //}
 
-//func GetDist(c *fiber.Ctx) error {
+//func GetDist(c fiber.Ctx) error {
 //	token := c.Query("token")
 //	dateStr := c.Query("date")
 //	if !secrets.TokenCheck(C.SALT, dateStr, token) {
@@ -576,7 +576,7 @@ func FindUsers(c *fiber.Ctx) error {
 //	}
 //}
 
-//func InsertUsers(c *fiber.Ctx) error {
+//func InsertUsers(c fiber.Ctx) error {
 //	var u model.User
 //
 //	var usersSent model.SendUsers
@@ -613,9 +613,9 @@ func FindUsers(c *fiber.Ctx) error {
 //	return c.JSON(fiber.Map{"message": "Success"})
 //}
 
-func InsertPostInfo(c *fiber.Ctx) error {
+func InsertPostInfo(c fiber.Ctx) error {
 	var postInfo model.PostInfo
-	err := c.BodyParser(&postInfo)
+	err := c.Bind().Body(&postInfo)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -683,7 +683,7 @@ func InsertPostInfo(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"data": post})
 }
 
-func GetIncome(c *fiber.Ctx) error {
+func GetIncome(c fiber.Ctx) error {
 	token := c.Query("token")
 	startDate := c.Query("start")
 	endDate := c.Query("end")
@@ -738,7 +738,7 @@ func GetIncome(c *fiber.Ctx) error {
 	})
 }
 
-func GetWallpaper(c *fiber.Ctx) error {
+func GetWallpaper(c fiber.Ctx) error {
 	requestType := c.Query("type")
 	var ret model.WallpaperRet
 

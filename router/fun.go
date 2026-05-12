@@ -100,7 +100,6 @@ func getDist(level, rank uint, server string, ch chan model.DistRet, wg *sync.Wa
 	err = json.Unmarshal(response, &info)
 	if err != nil {
 		panic(err)
-		return
 	}
 
 	result := model.DistRet{

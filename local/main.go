@@ -115,9 +115,7 @@ func getUsers(tieba string, page uint) ([]model.TiebaUser, error) {
 	defer res.Body.Close()
 	if res.StatusCode != 200 {
 		log.Printf("Status code err: %d %s", res.StatusCode, res.Status)
-		return nil, &crawler.MyError{
-			fmt.Sprintf("%d %s", res.StatusCode, res.Status),
-		}
+		return nil, &crawler.MyError{Message: fmt.Sprintf("%d %s", res.StatusCode, res.Status)}
 	}
 
 	// Create document from webpage
@@ -153,7 +151,7 @@ func getUsers(tieba string, page uint) ([]model.TiebaUser, error) {
 		link, ok := s.Find(".drl_item_card").Find("a").Attr("href")
 		if !ok {
 			log.Println("Failed to find link")
-			err = &crawler.MyError{"Failed to find link"}
+			err = &crawler.MyError{Message: "Failed to find link"}
 			return
 		}
 
@@ -161,7 +159,7 @@ func getUsers(tieba string, page uint) ([]model.TiebaUser, error) {
 		level, ok := s.Find(".drl_item_title").Find("div").Attr("class")
 		if !ok {
 			log.Println("Failed to find level")
-			err = &crawler.MyError{"Failed to find level"}
+			err = &crawler.MyError{Message: "Failed to find level"}
 			return
 		}
 		level = strings.Split(level, "lv")[1]

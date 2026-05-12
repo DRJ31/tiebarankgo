@@ -3,7 +3,7 @@ package model
 import (
 	"fmt"
 	"github.com/DRJ31/tiebarankgo/config"
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 )
 
 func InitRedis() *redis.Client {
