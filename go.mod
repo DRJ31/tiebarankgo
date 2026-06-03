@@ -1,6 +1,6 @@
 module github.com/DRJ31/tiebarankgo
 
-go 1.26
+go 1.26.4
 
 require (
 	github.com/PuerkitoBio/goquery v1.12.0
